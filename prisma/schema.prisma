@@ -1,0 +1,188 @@
+// TovarkaDuck — Prisma schema
+// PostgreSQL, керується через Prisma ORM
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum StockStatus {
+  IN_STOCK    // ✅ В наявності
+  LOW_STOCK   // 🟡 Закінчується
+  OUT_OF_STOCK // 🔴 Немає в наявності
+}
+
+enum OrderStatus {
+  NEW          // Нове
+  CONFIRMED    // Підтверджено
+  PROCESSING   // Комплектується
+  SHIPPED      // Відправлено
+  DELIVERED    // Доставлено
+  CANCELLED    // Скасовано
+}
+
+enum AdminRole {
+  OWNER
+  MANAGER
+}
+
+model Category {
+  id        String    @id @default(cuid())
+  name      String
+  slug      String    @unique
+  icon      String? // emoji or icon name shown in the category pill
+  sortOrder Int       @default(0)
+  products  Product[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model Product {
+  id            String        @id @default(cuid())
+  title         String
+  description   String        @db.Text
+  specs         Json? // key/value technical characteristics
+  price         Decimal       @db.Decimal(10, 2)
+  oldPrice      Decimal?      @db.Decimal(10, 2)
+  discountPct   Int? // computed & cached at write-time for fast catalog rendering
+  images        ProductImage[]
+  sizes         String[]      @default([])
+  colors        ProductColor[]
+  rating        Float         @default(0)
+  ratingCount   Int           @default(0)
+  stockStatus   StockStatus   @default(IN_STOCK)
+  stockQty      Int           @default(0)
+  isFeatured    Boolean       @default(false) // "Популярні товари"
+  isNew         Boolean       @default(false) // "Новинки"
+  isPromo       Boolean       @default(false) // "Акції"
+  categoryId    String
+  category      Category      @relation(fields: [categoryId], references: [id])
+  favorites     Favorite[]
+  orderItems    OrderItem[]
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@index([categoryId])
+  @@index([isFeatured])
+  @@index([isNew])
+  @@index([isPromo])
+}
+
+model ProductImage {
+  id        String   @id @default(cuid())
+  url       String
+  sortOrder Int      @default(0)
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
+
+model ProductColor {
+  id        String  @id @default(cuid())
+  name      String
+  hex       String
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
+
+model User {
+  id            String     @id @default(cuid())
+  telegramId    String     @unique
+  username      String?
+  firstName     String?
+  lastName      String?
+  photoUrl      String?
+  phone         String?
+  addresses     Address[]
+  favorites     Favorite[]
+  orders        Order[]
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+}
+
+model Address {
+  id           String  @id @default(cuid())
+  userId       String
+  user         User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  city         String
+  novaPoshta   String // відділення Нової Пошти
+  isDefault    Boolean @default(false)
+  createdAt    DateTime @default(now())
+}
+
+model Favorite {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, productId])
+}
+
+model PromoCode {
+  id            String   @id @default(cuid())
+  code          String   @unique
+  discountPct   Int?
+  discountAmt   Decimal? @db.Decimal(10, 2)
+  isActive      Boolean  @default(true)
+  usageLimit    Int?
+  usedCount     Int      @default(0)
+  expiresAt     DateTime?
+  orders        Order[]
+  createdAt     DateTime @default(now())
+}
+
+model Order {
+  id            String      @id @default(cuid())
+  orderNumber   String      @unique // human-friendly, e.g. TD-100234
+  userId        String?
+  user          User?       @relation(fields: [userId], references: [id])
+  items         OrderItem[]
+  status        OrderStatus @default(NEW)
+
+  fullName      String
+  phone         String
+  telegramUsername String?
+  city          String
+  novaPoshta    String
+  comment       String?
+
+  subtotal      Decimal     @db.Decimal(10, 2)
+  discountTotal Decimal     @db.Decimal(10, 2) @default(0)
+  total         Decimal     @db.Decimal(10, 2)
+
+  promoCodeId   String?
+  promoCode     PromoCode?  @relation(fields: [promoCodeId], references: [id])
+
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@index([status])
+  @@index([userId])
+}
+
+model OrderItem {
+  id         String   @id @default(cuid())
+  orderId    String
+  order      Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId  String
+  product    Product  @relation(fields: [productId], references: [id])
+  title      String   // snapshot at time of purchase
+  price      Decimal  @db.Decimal(10, 2) // snapshot price
+  quantity   Int
+  size       String?
+  color      String?
+}
+
+model Admin {
+  id           String    @id @default(cuid())
+  login        String    @unique
+  passwordHash String
+  role         AdminRole @default(MANAGER)
+  createdAt    DateTime  @default(now())
+}

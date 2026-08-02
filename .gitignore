@@ -1,0 +1,28 @@
+# Dependencies
+node_modules/
+bot/node_modules/
+
+# Next.js
+.next/
+out/
+next-env.d.ts.bak
+
+# Build output
+bot/dist/
+
+# Environment variables — NEVER commit real secrets
+.env
+.env.local
+.env.production
+bot/.env
+
+# Prisma
+prisma/*.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS / editor
+.DS_Store
+.vscode/

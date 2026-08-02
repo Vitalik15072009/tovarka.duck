@@ -1,0 +1,91 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --tg-bg: #0e1116;
+  --tg-secondary-bg: #161a21;
+  --tg-text: #f5f6f7;
+  --tg-hint: #8a95a3;
+  --tg-link: #f5b301;
+  --tg-button: #f5b301;
+  --tg-button-text: #14161a;
+  --tg-section-bg: #1b1f27;
+  --font-display: "TDDisplay", -apple-system, "Segoe UI", sans-serif;
+  --font-body: -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+html.dark {
+  color-scheme: dark;
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+html,
+body {
+  background-color: var(--tg-bg);
+  color: var(--tg-text);
+  transition: background-color 0.25s ease, color 0.25s ease;
+  overscroll-behavior-y: none;
+}
+
+body {
+  font-family: var(--font-body);
+}
+
+/* Hide scrollbars but keep scrolling, native-app feel */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Premium shimmer skeleton */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--tg-secondary-bg) 0%,
+    rgba(245, 179, 1, 0.12) 50%,
+    var(--tg-secondary-bg) 100%
+  );
+  background-size: 800px 100%;
+  animation: shimmer 1.6s infinite linear;
+}
+
+/* Gold underline accent used for section headers */
+.title-accent {
+  position: relative;
+  display: inline-block;
+}
+.title-accent::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -4px;
+  height: 3px;
+  width: 32px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #f5b301, #ffd35c);
+}
+
+/* Duck-bill shaped discount tag */
+.discount-tag {
+  clip-path: polygon(0 0, 100% 0, 100% 70%, 85% 100%, 0 100%);
+}
+
+button,
+a {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+input,
+textarea,
+select {
+  background-color: var(--tg-secondary-bg);
+  color: var(--tg-text);
+}

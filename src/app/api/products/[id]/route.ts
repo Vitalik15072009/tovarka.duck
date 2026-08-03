@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { productUpdateSchema } from "@/lib/validation";
 import { requireAdmin } from "@/lib/adminAuth";
 import { calcDiscountPct } from "@/lib/utils";
-import { serializeProduct } from "../route";
+import { serializeProduct } from "@/lib/serializeProduct";
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;

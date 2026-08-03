@@ -1,3 +1,4 @@
+import { serializeProduct } from "@/lib/serializeProduct";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { productCreateSchema } from "@/lib/validation";
@@ -90,12 +91,3 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// Prisma returns Decimal for price fields — convert to plain numbers for the client
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function serializeProduct(p: any) {
-  return {
-    ...p,
-    price: Number(p.price),
-    oldPrice: p.oldPrice != null ? Number(p.oldPrice) : null,
-  };
-}

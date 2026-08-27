@@ -172,22 +172,29 @@ async function main() {
     // Telegram CDN-посилання на оригінальні фото не призначені для прямого
     // хотлінку — реальні фото варто завантажити через адмін-панель). ---
     {
-      title: "Кросівки Numeris",
-      description: "Кросівки Numeris. Оригінал, привезені під замовлення з каналу TovarkaDuck.",
-      specs: { Розмір: "39", Устілка: "26 см" },
-      price: 2999,
-      oldPrice: null,
-      discountPct: null,
-      sizes: ["39"],
-      colors: [],
-      rating: 4.7,
-      ratingCount: 12,
-      stockStatus: StockStatus.IN_STOCK,
-      stockQty: 3,
-      isFeatured: true,
-      categoryId: shoes.id,
-      images: ["https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?w=800"],
-    },
+  title: "Кросівки Numeris",
+  description:
+    "Оригінальні кросівки Numeris. Розмір 42, устілка 27,5 см. Доставка 1–2 дні.",
+  specs: {
+    Розмір: "42",
+    Устілка: "27,5 см",
+    Доставка: "1–2 дні",
+  },
+  price: 2999,
+  oldPrice: null,
+  discountPct: null,
+  sizes: ["42"],
+  colors: [],
+  rating: 4.7,
+  ratingCount: 12,
+  stockStatus: StockStatus.IN_STOCK,
+  stockQty: 3,
+  isFeatured: true,
+  categoryId: shoes.id,
+  images: [
+    "https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?w=800",
+  ],
+},
     {
       title: "Кросівки New Balance 1906r",
       description: "Кросівки New Balance 1906r. Оригінал, привезені під замовлення з каналу TovarkaDuck.",
@@ -259,7 +266,27 @@ async function main() {
   for (const p of products) {
     const { images, colors, ...rest } = p;
     const existing = await prisma.product.findFirst({ where: { title: rest.title } });
-    if (existing) continue;
+    if (existing) {
+  await prisma.product.update({
+    where: { id: existing.id },
+    data: {
+      ...rest,
+      images: {
+        deleteMany: {},
+        create: images.map((url, i) => ({
+          url,
+          sortOrder: i,
+        })),
+      },
+      colors: {
+        deleteMany: {},
+        create: colors,
+      },
+    },
+  });
+
+  continue;
+}
     await prisma.product.create({
       data: {
         ...rest,

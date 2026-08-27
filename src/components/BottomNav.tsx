@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Grid3x3, ShoppingBag, Heart, User } from "lucide-react";
+import { Home, Grid3x3, ShoppingBag, Package, User } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import { useTelegram } from "@/context/TelegramContext";
 import { cn } from "@/lib/utils";
@@ -11,7 +11,7 @@ const tabs = [
   { href: "/", label: "Головна", icon: Home },
   { href: "/catalog", label: "Каталог", icon: Grid3x3 },
   { href: "/cart", label: "Кошик", icon: ShoppingBag },
-  { href: "/favorites", label: "Обране", icon: Heart },
+  { href: "/orders", label: "Замовлення", icon: Package },
   { href: "/profile", label: "Профіль", icon: User },
 ];
 
@@ -21,7 +21,7 @@ export default function BottomNav() {
   const { haptic } = useTelegram();
 
   return (
-    <nav className="fixed bottom-0 left-1/2 z-40 w-full max-w-md -translate-x-1/2 border-t border-white/5 bg-tg-secondary-bg/90 backdrop-blur-lg">
+    <nav className="safe-area-bottom fixed bottom-0 left-1/2 z-40 w-full max-w-md -translate-x-1/2 border-t border-white/5 bg-tg-secondary-bg/90 backdrop-blur-lg">
       <div className="flex items-center justify-around py-2">
         {tabs.map(({ href, label, icon: Icon }) => {
           const active = href === "/" ? pathname === "/" : pathname?.startsWith(href);

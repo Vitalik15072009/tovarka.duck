@@ -82,6 +82,8 @@ export interface OrderDTO {
   city: string;
   novaPoshta: string;
   comment?: string | null;
+  deliveryMethod: "NOVA_POSHTA" | "UKRPOSHTA";
+  paymentMethod: "CASH_ON_DELIVERY" | "CARD_TRANSFER";
   items: OrderItemDTO[];
   subtotal: number;
   discountTotal: number;

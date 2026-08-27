@@ -151,6 +151,8 @@ model Order {
   city          String
   novaPoshta    String
   comment       String?
+  deliveryMethod String     @default("NOVA_POSHTA") // NOVA_POSHTA | UKRPOSHTA
+  paymentMethod  String     @default("CASH_ON_DELIVERY") // CASH_ON_DELIVERY | CARD_TRANSFER
 
   subtotal      Decimal     @db.Decimal(10, 2)
   discountTotal Decimal     @db.Decimal(10, 2) @default(0)

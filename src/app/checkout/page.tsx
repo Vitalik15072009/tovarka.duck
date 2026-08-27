@@ -15,6 +15,8 @@ interface FormState {
   city: string;
   novaPoshta: string;
   comment: string;
+  deliveryMethod: "NOVA_POSHTA" | "UKRPOSHTA";
+  paymentMethod: "CASH_ON_DELIVERY" | "CARD_TRANSFER";
 }
 
 const emptyForm: FormState = {
@@ -24,6 +26,8 @@ const emptyForm: FormState = {
   city: "",
   novaPoshta: "",
   comment: "",
+  deliveryMethod: "NOVA_POSHTA",
+  paymentMethod: "CASH_ON_DELIVERY",
 };
 
 export default function CheckoutPage() {
@@ -122,7 +126,7 @@ export default function CheckoutPage() {
             Наш менеджер звʼяжеться з вами найближчим часом для підтвердження.
           </p>
           <button
-            onClick={() => router.push("/profile")}
+            onClick={() => router.push("/orders")}
             className="mt-2 rounded-2xl bg-duck-gold px-6 py-2.5 text-sm font-bold text-duck-ink transition-transform active:scale-95"
           >
             Мої замовлення
@@ -150,52 +154,90 @@ export default function CheckoutPage() {
   return (
     <>
       <Header title="Оформлення замовлення" showBack />
-      <div className="flex flex-col gap-4 px-4 pb-32">
-        <Field label="Ім'я" error={errors.fullName}>
-          <input
-            value={form.fullName}
-            onChange={(e) => setForm({ ...form, fullName: e.target.value })}
-            placeholder="Ваше повне імʼя"
-            className="input"
-          />
-        </Field>
+      <div className="flex flex-col gap-6 px-4 pb-32">
+        <section className="flex flex-col gap-4">
+          <h2 className="font-display text-sm font-bold text-tg-text">Контактні дані</h2>
+          <Field label="Ім'я та прізвище" error={errors.fullName}>
+            <input
+              value={form.fullName}
+              onChange={(e) => setForm({ ...form, fullName: e.target.value })}
+              placeholder="Ваше повне імʼя"
+              className="input"
+            />
+          </Field>
 
-        <Field label="Телефон" error={errors.phone}>
-          <input
-            value={form.phone}
-            onChange={(e) => setForm({ ...form, phone: e.target.value })}
-            placeholder="+380 XX XXX XX XX"
-            inputMode="tel"
-            className="input"
-          />
-        </Field>
+          <Field label="Телефон" error={errors.phone}>
+            <input
+              value={form.phone}
+              onChange={(e) => setForm({ ...form, phone: e.target.value })}
+              placeholder="+380 XX XXX XX XX"
+              inputMode="tel"
+              className="input"
+            />
+          </Field>
 
-        <Field label="Telegram username">
-          <input
-            value={form.telegramUsername}
-            onChange={(e) => setForm({ ...form, telegramUsername: e.target.value })}
-            placeholder="username"
-            className="input"
-          />
-        </Field>
+          <Field label="Telegram username">
+            <input
+              value={form.telegramUsername}
+              onChange={(e) => setForm({ ...form, telegramUsername: e.target.value })}
+              placeholder="username"
+              className="input"
+            />
+          </Field>
+        </section>
 
-        <Field label="Місто" error={errors.city}>
-          <input
-            value={form.city}
-            onChange={(e) => setForm({ ...form, city: e.target.value })}
-            placeholder="Ваше місто"
-            className="input"
+        <section className="flex flex-col gap-3">
+          <h2 className="font-display text-sm font-bold text-tg-text">Доставка</h2>
+          <RadioCard
+            label="Нова Пошта"
+            hint="1–2 дні · Безкоштовно"
+            checked={form.deliveryMethod === "NOVA_POSHTA"}
+            onSelect={() => setForm({ ...form, deliveryMethod: "NOVA_POSHTA" })}
           />
-        </Field>
+          <RadioCard
+            label="Укрпошта"
+            hint="3–5 днів · Безкоштовно"
+            checked={form.deliveryMethod === "UKRPOSHTA"}
+            onSelect={() => setForm({ ...form, deliveryMethod: "UKRPOSHTA" })}
+          />
 
-        <Field label="Відділення Нової Пошти" error={errors.novaPoshta}>
-          <input
-            value={form.novaPoshta}
-            onChange={(e) => setForm({ ...form, novaPoshta: e.target.value })}
-            placeholder="Наприклад: Відділення №5"
-            className="input"
+          <Field label="Місто" error={errors.city}>
+            <input
+              value={form.city}
+              onChange={(e) => setForm({ ...form, city: e.target.value })}
+              placeholder="Ваше місто"
+              className="input"
+            />
+          </Field>
+
+          <Field
+            label={form.deliveryMethod === "NOVA_POSHTA" ? "Відділення Нової Пошти" : "Відділення або адреса"}
+            error={errors.novaPoshta}
+          >
+            <input
+              value={form.novaPoshta}
+              onChange={(e) => setForm({ ...form, novaPoshta: e.target.value })}
+              placeholder="Наприклад: Відділення №5"
+              className="input"
+            />
+          </Field>
+        </section>
+
+        <section className="flex flex-col gap-3">
+          <h2 className="font-display text-sm font-bold text-tg-text">Оплата</h2>
+          <RadioCard
+            label="Накладений платіж"
+            hint="Оплата при отриманні — без передоплати"
+            checked={form.paymentMethod === "CASH_ON_DELIVERY"}
+            onSelect={() => setForm({ ...form, paymentMethod: "CASH_ON_DELIVERY" })}
           />
-        </Field>
+          <RadioCard
+            label="Переказ на картку"
+            hint="Потрібен буде скріншот оплати"
+            checked={form.paymentMethod === "CARD_TRANSFER"}
+            onSelect={() => setForm({ ...form, paymentMethod: "CARD_TRANSFER" })}
+          />
+        </section>
 
         <Field label="Коментар">
           <textarea
@@ -219,7 +261,7 @@ export default function CheckoutPage() {
             </div>
           )}
           <div className="mt-1 flex justify-between border-t border-white/5 pt-2 font-display text-base font-bold text-tg-text">
-            <span>Разом</span>
+            <span>До сплати</span>
             <span>{formatUAH(total)}</span>
           </div>
         </div>
@@ -265,5 +307,39 @@ function Field({
       {children}
       {error && <span className="text-xs text-duck-coral">{error}</span>}
     </label>
+  );
+}
+
+function RadioCard({
+  label,
+  hint,
+  checked,
+  onSelect,
+}: {
+  label: string;
+  hint: string;
+  checked: boolean;
+  onSelect: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      className={`flex items-center justify-between rounded-2xl border p-3.5 text-left transition-colors ${
+        checked ? "border-duck-gold bg-duck-gold/10" : "border-transparent bg-tg-section"
+      }`}
+    >
+      <div>
+        <p className="text-sm font-semibold text-tg-text">{label}</p>
+        <p className="text-xs text-tg-hint">{hint}</p>
+      </div>
+      <span
+        className={`flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full border-2 ${
+          checked ? "border-duck-gold" : "border-tg-hint"
+        }`}
+      >
+        {checked && <span className="h-2.5 w-2.5 rounded-full bg-duck-gold" />}
+      </span>
+    </button>
   );
 }

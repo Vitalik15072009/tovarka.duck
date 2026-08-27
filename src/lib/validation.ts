@@ -64,6 +64,8 @@ export const orderCreateSchema = z.object({
   city: z.string().min(2, "Вкажіть місто").max(120),
   novaPoshta: z.string().min(1, "Вкажіть відділення Нової Пошти").max(200),
   comment: z.string().max(1000).optional().nullable(),
+  deliveryMethod: z.enum(["NOVA_POSHTA", "UKRPOSHTA"]).default("NOVA_POSHTA"),
+  paymentMethod: z.enum(["CASH_ON_DELIVERY", "CARD_TRANSFER"]).default("CASH_ON_DELIVERY"),
   items: z.array(orderItemInputSchema).min(1, "Кошик порожній"),
   promoCode: z.string().max(40).optional().nullable(),
   initData: z.string().optional(), // Telegram WebApp initData for user identification

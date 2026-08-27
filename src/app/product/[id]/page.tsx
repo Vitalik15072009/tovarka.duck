@@ -267,15 +267,26 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
           </div>
         )}
 
-        {/* Add to cart (Telegram MainButton handles "Купити") */}
-        <button
-          onClick={() => handleAddToCart(false)}
-          disabled={outOfStock}
-          className="flex items-center justify-center gap-2 rounded-2xl border-2 border-duck-gold py-3.5 text-sm font-bold text-duck-gold transition-transform active:scale-95 disabled:opacity-40"
-        >
-          <ShoppingBag size={16} />
-          Додати в кошик
-        </button>
+        {/* "Купити зараз" — primary CTA, in-page (Telegram's native MainButton
+            does the same action but only renders inside Telegram itself, so
+            this keeps the flow visible when testing in a regular browser). */}
+        <div className="flex flex-col gap-2.5">
+          <button
+            onClick={() => handleAddToCart(true)}
+            disabled={outOfStock}
+            className="rounded-2xl bg-tg-text py-3.5 text-sm font-bold text-duck-ink transition-transform active:scale-95 disabled:opacity-40"
+          >
+            Купити зараз
+          </button>
+          <button
+            onClick={() => handleAddToCart(false)}
+            disabled={outOfStock}
+            className="flex items-center justify-center gap-2 rounded-2xl border-2 border-duck-gold py-3.5 text-sm font-bold text-duck-gold transition-transform active:scale-95 disabled:opacity-40"
+          >
+            <ShoppingBag size={16} />
+            Додати в кошик
+          </button>
+        </div>
 
         {/* Similar products */}
         {similar.length > 0 && (

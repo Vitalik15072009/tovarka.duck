@@ -16,7 +16,8 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-  themeColor: "#0e1116",
+  themeColor: "#0b0b0d",
+  viewportFit: "cover", // Safe-area support for Telegram notches/system UI
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

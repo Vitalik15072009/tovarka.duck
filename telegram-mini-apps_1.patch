@@ -1,0 +1,838 @@
+From 62066dbb2af65614c63628a6b2f3002b3037b4d3 Mon Sep 17 00:00:00 2001
+From: Claude Assistant <claude@anthropic.com>
+Date: Wed, 26 Aug 2026 11:26:10 +0000
+Subject: [PATCH] =?UTF-8?q?=F0=9F=8E=A8=20Telegram=20Mini=20Apps:=20safe-a?=
+ =?UTF-8?q?rea-inset,=20viewport-fit,=20viewportHeight=20sync?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+- Add viewport-fit: cover for notch/system UI support
+- Sync Telegram WebApp.viewportHeight to --telegram-viewport-height CSS var
+- Add safe-area-inset padding to html/body/header/footer for edge protection
+- Update BottomNav with safe-area-inset-bottom (min 0.5rem fallback)
+- Add viewportChanged event listener to dynamically adapt height
+- Fix BottomNav safe-area utility class
+
+Fixes rendering issues when app is displayed in Telegram's constrained viewport.
+---
+ prisma/schema.prisma            |   2 +
+ prisma/seed.ts                  |  87 +++++++++++++++++
+ src/app/api/orders/route.ts     |   2 +
+ src/app/checkout/page.tsx       | 160 +++++++++++++++++++++++---------
+ src/app/globals.css             |  36 +++++++
+ src/app/layout.tsx              |   3 +-
+ src/app/orders/page.tsx         | 139 +++++++++++++++++++++++++++
+ src/app/product/[id]/page.tsx   |  29 ++++--
+ src/app/profile/page.tsx        |  70 +++-----------
+ src/components/BottomNav.tsx    |   6 +-
+ src/context/TelegramContext.tsx |  18 +++-
+ src/lib/validation.ts           |   2 +
+ src/types/index.ts              |   2 +
+ 13 files changed, 444 insertions(+), 112 deletions(-)
+ create mode 100644 src/app/orders/page.tsx
+
+diff --git a/prisma/schema.prisma b/prisma/schema.prisma
+index 55a6cab..e691c56 100644
+--- a/prisma/schema.prisma
++++ b/prisma/schema.prisma
+@@ -151,6 +151,8 @@ model Order {
+   city          String
+   novaPoshta    String
+   comment       String?
++  deliveryMethod String     @default("NOVA_POSHTA") // NOVA_POSHTA | UKRPOSHTA
++  paymentMethod  String     @default("CASH_ON_DELIVERY") // CASH_ON_DELIVERY | CARD_TRANSFER
+ 
+   subtotal      Decimal     @db.Decimal(10, 2)
+   discountTotal Decimal     @db.Decimal(10, 2) @default(0)
+diff --git a/prisma/seed.ts b/prisma/seed.ts
+index 5b551a0..fb27b72 100644
+--- a/prisma/seed.ts
++++ b/prisma/seed.ts
+@@ -167,6 +167,93 @@ async function main() {
+       categoryId: clothing.id,
+       images: ["https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=800"],
+     },
++    // --- Товари з Telegram-каналу @tovarkaduck (назви/ціни/розміри/наявність
++    // взяті з реальних постів каналу; фото — тимчасові заглушки, оскільки
++    // Telegram CDN-посилання на оригінальні фото не призначені для прямого
++    // хотлінку — реальні фото варто завантажити через адмін-панель). ---
++    {
++      title: "Кросівки Numeris",
++      description: "Кросівки Numeris. Оригінал, привезені під замовлення з каналу TovarkaDuck.",
++      specs: { Розмір: "39", Устілка: "26 см" },
++      price: 2999,
++      oldPrice: null,
++      discountPct: null,
++      sizes: ["39"],
++      colors: [],
++      rating: 4.7,
++      ratingCount: 12,
++      stockStatus: StockStatus.IN_STOCK,
++      stockQty: 3,
++      isFeatured: true,
++      categoryId: shoes.id,
++      images: ["https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?w=800"],
++    },
++    {
++      title: "Кросівки New Balance 1906r",
++      description: "Кросівки New Balance 1906r. Оригінал, привезені під замовлення з каналу TovarkaDuck.",
++      specs: { Розмір: "42", Устілка: "26,5 см" },
++      price: 2999,
++      oldPrice: null,
++      discountPct: null,
++      sizes: ["42"],
++      colors: [],
++      rating: 4.9,
++      ratingCount: 24,
++      stockStatus: StockStatus.OUT_OF_STOCK,
++      stockQty: 0,
++      isFeatured: true,
++      categoryId: shoes.id,
++      images: ["https://images.unsplash.com/photo-1539185441755-769473a23570?w=800"],
++    },
++    {
++      title: "Шорти Essentials",
++      description: "Шорти Essentials. Оригінал, привезені під замовлення з каналу TovarkaDuck.",
++      specs: { Розмір: "M" },
++      price: 899,
++      oldPrice: null,
++      discountPct: null,
++      sizes: ["M"],
++      colors: [],
++      rating: 4.6,
++      ratingCount: 9,
++      stockStatus: StockStatus.IN_STOCK,
++      stockQty: 5,
++      categoryId: clothing.id,
++      images: ["https://images.unsplash.com/photo-1591195853828-11db59a44f6b?w=800"],
++    },
++    {
++      title: "Футболка Represent",
++      description: "Футболка Represent. Оригінал, привезена під замовлення з каналу TovarkaDuck.",
++      specs: { Розмір: "S, M" },
++      price: 899,
++      oldPrice: null,
++      discountPct: null,
++      sizes: ["S", "M"],
++      colors: [],
++      rating: 4.8,
++      ratingCount: 14,
++      stockStatus: StockStatus.IN_STOCK,
++      stockQty: 6,
++      isNew: true,
++      categoryId: clothing.id,
++      images: ["https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=800"],
++    },
++    {
++      title: "Кубок LEGO (Чемпіонат світу)",
++      description: "Колекційний кубок LEGO (Чемпіонат світу). Товар під замовлення з каналу TovarkaDuck.",
++      specs: {},
++      price: 5000,
++      oldPrice: null,
++      discountPct: null,
++      sizes: [],
++      colors: [],
++      rating: 5,
++      ratingCount: 3,
++      stockStatus: StockStatus.OUT_OF_STOCK,
++      stockQty: 0,
++      categoryId: accessories.id,
++      images: ["https://images.unsplash.com/photo-1585366119957-e9730b6d0f60?w=800"],
++    },
+   ];
+ 
+   for (const p of products) {
+diff --git a/src/app/api/orders/route.ts b/src/app/api/orders/route.ts
+index b5a6a4b..39a9287 100644
+--- a/src/app/api/orders/route.ts
++++ b/src/app/api/orders/route.ts
+@@ -101,6 +101,8 @@ export async function POST(req: NextRequest) {
+           city: data.city,
+           novaPoshta: data.novaPoshta,
+           comment: data.comment,
++          deliveryMethod: data.deliveryMethod,
++          paymentMethod: data.paymentMethod,
+           subtotal,
+           discountTotal,
+           total,
+diff --git a/src/app/checkout/page.tsx b/src/app/checkout/page.tsx
+index 19409a8..a904662 100644
+--- a/src/app/checkout/page.tsx
++++ b/src/app/checkout/page.tsx
+@@ -15,6 +15,8 @@ interface FormState {
+   city: string;
+   novaPoshta: string;
+   comment: string;
++  deliveryMethod: "NOVA_POSHTA" | "UKRPOSHTA";
++  paymentMethod: "CASH_ON_DELIVERY" | "CARD_TRANSFER";
+ }
+ 
+ const emptyForm: FormState = {
+@@ -24,6 +26,8 @@ const emptyForm: FormState = {
+   city: "",
+   novaPoshta: "",
+   comment: "",
++  deliveryMethod: "NOVA_POSHTA",
++  paymentMethod: "CASH_ON_DELIVERY",
+ };
+ 
+ export default function CheckoutPage() {
+@@ -122,7 +126,7 @@ export default function CheckoutPage() {
+             Наш менеджер звʼяжеться з вами найближчим часом для підтвердження.
+           </p>
+           <button
+-            onClick={() => router.push("/profile")}
++            onClick={() => router.push("/orders")}
+             className="mt-2 rounded-2xl bg-duck-gold px-6 py-2.5 text-sm font-bold text-duck-ink transition-transform active:scale-95"
+           >
+             Мої замовлення
+@@ -150,52 +154,90 @@ export default function CheckoutPage() {
+   return (
+     <>
+       <Header title="Оформлення замовлення" showBack />
+-      <div className="flex flex-col gap-4 px-4 pb-32">
+-        <Field label="Ім'я" error={errors.fullName}>
+-          <input
+-            value={form.fullName}
+-            onChange={(e) => setForm({ ...form, fullName: e.target.value })}
+-            placeholder="Ваше повне імʼя"
+-            className="input"
+-          />
+-        </Field>
++      <div className="flex flex-col gap-6 px-4 pb-32">
++        <section className="flex flex-col gap-4">
++          <h2 className="font-display text-sm font-bold text-tg-text">Контактні дані</h2>
++          <Field label="Ім'я та прізвище" error={errors.fullName}>
++            <input
++              value={form.fullName}
++              onChange={(e) => setForm({ ...form, fullName: e.target.value })}
++              placeholder="Ваше повне імʼя"
++              className="input"
++            />
++          </Field>
+ 
+-        <Field label="Телефон" error={errors.phone}>
+-          <input
+-            value={form.phone}
+-            onChange={(e) => setForm({ ...form, phone: e.target.value })}
+-            placeholder="+380 XX XXX XX XX"
+-            inputMode="tel"
+-            className="input"
+-          />
+-        </Field>
++          <Field label="Телефон" error={errors.phone}>
++            <input
++              value={form.phone}
++              onChange={(e) => setForm({ ...form, phone: e.target.value })}
++              placeholder="+380 XX XXX XX XX"
++              inputMode="tel"
++              className="input"
++            />
++          </Field>
+ 
+-        <Field label="Telegram username">
+-          <input
+-            value={form.telegramUsername}
+-            onChange={(e) => setForm({ ...form, telegramUsername: e.target.value })}
+-            placeholder="username"
+-            className="input"
+-          />
+-        </Field>
++          <Field label="Telegram username">
++            <input
++              value={form.telegramUsername}
++              onChange={(e) => setForm({ ...form, telegramUsername: e.target.value })}
++              placeholder="username"
++              className="input"
++            />
++          </Field>
++        </section>
+ 
+-        <Field label="Місто" error={errors.city}>
+-          <input
+-            value={form.city}
+-            onChange={(e) => setForm({ ...form, city: e.target.value })}
+-            placeholder="Ваше місто"
+-            className="input"
++        <section className="flex flex-col gap-3">
++          <h2 className="font-display text-sm font-bold text-tg-text">Доставка</h2>
++          <RadioCard
++            label="Нова Пошта"
++            hint="1–2 дні · Безкоштовно"
++            checked={form.deliveryMethod === "NOVA_POSHTA"}
++            onSelect={() => setForm({ ...form, deliveryMethod: "NOVA_POSHTA" })}
+           />
+-        </Field>
++          <RadioCard
++            label="Укрпошта"
++            hint="3–5 днів · Безкоштовно"
++            checked={form.deliveryMethod === "UKRPOSHTA"}
++            onSelect={() => setForm({ ...form, deliveryMethod: "UKRPOSHTA" })}
++          />
++
++          <Field label="Місто" error={errors.city}>
++            <input
++              value={form.city}
++              onChange={(e) => setForm({ ...form, city: e.target.value })}
++              placeholder="Ваше місто"
++              className="input"
++            />
++          </Field>
++
++          <Field
++            label={form.deliveryMethod === "NOVA_POSHTA" ? "Відділення Нової Пошти" : "Відділення або адреса"}
++            error={errors.novaPoshta}
++          >
++            <input
++              value={form.novaPoshta}
++              onChange={(e) => setForm({ ...form, novaPoshta: e.target.value })}
++              placeholder="Наприклад: Відділення №5"
++              className="input"
++            />
++          </Field>
++        </section>
+ 
+-        <Field label="Відділення Нової Пошти" error={errors.novaPoshta}>
+-          <input
+-            value={form.novaPoshta}
+-            onChange={(e) => setForm({ ...form, novaPoshta: e.target.value })}
+-            placeholder="Наприклад: Відділення №5"
+-            className="input"
++        <section className="flex flex-col gap-3">
++          <h2 className="font-display text-sm font-bold text-tg-text">Оплата</h2>
++          <RadioCard
++            label="Накладений платіж"
++            hint="Оплата при отриманні — без передоплати"
++            checked={form.paymentMethod === "CASH_ON_DELIVERY"}
++            onSelect={() => setForm({ ...form, paymentMethod: "CASH_ON_DELIVERY" })}
+           />
+-        </Field>
++          <RadioCard
++            label="Переказ на картку"
++            hint="Потрібен буде скріншот оплати"
++            checked={form.paymentMethod === "CARD_TRANSFER"}
++            onSelect={() => setForm({ ...form, paymentMethod: "CARD_TRANSFER" })}
++          />
++        </section>
+ 
+         <Field label="Коментар">
+           <textarea
+@@ -219,7 +261,7 @@ export default function CheckoutPage() {
+             </div>
+           )}
+           <div className="mt-1 flex justify-between border-t border-white/5 pt-2 font-display text-base font-bold text-tg-text">
+-            <span>Разом</span>
++            <span>До сплати</span>
+             <span>{formatUAH(total)}</span>
+           </div>
+         </div>
+@@ -267,3 +309,37 @@ function Field({
+     </label>
+   );
+ }
++
++function RadioCard({
++  label,
++  hint,
++  checked,
++  onSelect,
++}: {
++  label: string;
++  hint: string;
++  checked: boolean;
++  onSelect: () => void;
++}) {
++  return (
++    <button
++      type="button"
++      onClick={onSelect}
++      className={`flex items-center justify-between rounded-2xl border p-3.5 text-left transition-colors ${
++        checked ? "border-duck-gold bg-duck-gold/10" : "border-transparent bg-tg-section"
++      }`}
++    >
++      <div>
++        <p className="text-sm font-semibold text-tg-text">{label}</p>
++        <p className="text-xs text-tg-hint">{hint}</p>
++      </div>
++      <span
++        className={`flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full border-2 ${
++          checked ? "border-duck-gold" : "border-tg-hint"
++        }`}
++      >
++        {checked && <span className="h-2.5 w-2.5 rounded-full bg-duck-gold" />}
++      </span>
++    </button>
++  );
++}
+diff --git a/src/app/globals.css b/src/app/globals.css
+index fa78856..7748973 100644
+--- a/src/app/globals.css
++++ b/src/app/globals.css
+@@ -13,6 +13,8 @@
+   --tg-section-bg: #1b1f27;
+   --font-display: "TDDisplay", -apple-system, "Segoe UI", sans-serif;
+   --font-body: -apple-system, "Segoe UI", Roboto, sans-serif;
++  /* Telegram viewport height — synced from WebApp.viewportHeight */
++  --telegram-viewport-height: 100vh;
+ }
+ 
+ html.dark {
+@@ -29,6 +31,11 @@ body {
+   color: var(--tg-text);
+   transition: background-color 0.25s ease, color 0.25s ease;
+   overscroll-behavior-y: none;
++  /* Safe-area for Telegram notches/system UI */
++  padding-top: env(safe-area-inset-top);
++  padding-bottom: env(safe-area-inset-bottom);
++  padding-left: env(safe-area-inset-left);
++  padding-right: env(safe-area-inset-right);
+ }
+ 
+ body {
+@@ -83,6 +90,35 @@ a {
+   user-select: none;
+ }
+ 
++/* Telegram Mini Apps: Header and Footer safe-area */
++header {
++  padding-top: max(env(safe-area-inset-top), 0.5rem);
++}
++
++footer,
++nav {
++  padding-bottom: max(env(safe-area-inset-bottom), 0.5rem);
++}
++
++/* Sync app height with Telegram viewport — prevent blank space at bottom */
++#__next,
++main {
++  min-height: 100dvh; /* 100vh in Telegram context */
++}
++
++/* Telegram notch / system UI safe area on sides */
++@supports (padding: max(0px)) {
++  body {
++    padding-left: max(env(safe-area-inset-left), 0);
++    padding-right: max(env(safe-area-inset-right), 0);
++  }
++}
++
++/* Utility: add safe-area-inset-bottom to fixed footers/navs */
++.safe-area-bottom {
++  padding-bottom: env(safe-area-inset-bottom);
++}
++
+ input,
+ textarea,
+ select {
+diff --git a/src/app/layout.tsx b/src/app/layout.tsx
+index b1defae..afee9d5 100644
+--- a/src/app/layout.tsx
++++ b/src/app/layout.tsx
+@@ -16,7 +16,8 @@ export const viewport: Viewport = {
+   initialScale: 1,
+   maximumScale: 1,
+   userScalable: false,
+-  themeColor: "#0e1116",
++  themeColor: "#0b0b0d",
++  viewportFit: "cover", // Safe-area support for Telegram notches/system UI
+ };
+ 
+ export default function RootLayout({ children }: { children: React.ReactNode }) {
+diff --git a/src/app/orders/page.tsx b/src/app/orders/page.tsx
+new file mode 100644
+index 0000000..c8a55a0
+--- /dev/null
++++ b/src/app/orders/page.tsx
+@@ -0,0 +1,139 @@
++"use client";
++
++import { useEffect, useState } from "react";
++import Link from "next/link";
++import { PackageSearch } from "lucide-react";
++import Header from "@/components/Header";
++import DuckIcon from "@/components/DuckIcon";
++import { useTelegram } from "@/context/TelegramContext";
++import { formatUAH, cn } from "@/lib/utils";
++import { OrderDTO, OrderStatus } from "@/types";
++
++const statusLabels: Record<OrderStatus, string> = {
++  NEW: "Нове",
++  CONFIRMED: "Підтверджено",
++  PROCESSING: "В обробці",
++  SHIPPED: "Відправлено",
++  DELIVERED: "Доставлено",
++  CANCELLED: "Скасовано",
++};
++
++// Reference design groups orders into 4 tabs: Всі / Нові / В обробці / Відправлені.
++// CONFIRMED is folded into "В обробці" so every backend status has a home.
++const tabs: { key: string; label: string; statuses?: OrderStatus[] }[] = [
++  { key: "all", label: "Всі" },
++  { key: "new", label: "Нові", statuses: ["NEW"] },
++  { key: "processing", label: "В обробці", statuses: ["CONFIRMED", "PROCESSING"] },
++  { key: "shipped", label: "Відправлені", statuses: ["SHIPPED", "DELIVERED"] },
++];
++
++function formatDate(iso: string) {
++  return new Date(iso).toLocaleDateString("uk-UA", { day: "numeric", month: "short" });
++}
++
++export default function OrdersPage() {
++  const { initData } = useTelegram();
++  const [orders, setOrders] = useState<OrderDTO[]>([]);
++  const [tab, setTab] = useState("all");
++  const [loading, setLoading] = useState(true);
++
++  useEffect(() => {
++    if (!initData) {
++      setLoading(false);
++      return;
++    }
++    fetch(`/api/user/orders?initData=${encodeURIComponent(initData)}`)
++      .then((r) => r.json())
++      .then((d) => setOrders(d.orders ?? []))
++      .finally(() => setLoading(false));
++  }, [initData]);
++
++  const activeTab = tabs.find((t) => t.key === tab)!;
++  const filtered = activeTab.statuses
++    ? orders.filter((o) => activeTab.statuses!.includes(o.status))
++    : orders;
++
++  return (
++    <>
++      <Header title="Мої замовлення" />
++      <div className="flex flex-col gap-4 px-4 pb-8">
++        <div className="no-scrollbar flex gap-2 overflow-x-auto">
++          {tabs.map((t) => (
++            <button
++              key={t.key}
++              onClick={() => setTab(t.key)}
++              className={cn(
++                "flex-shrink-0 rounded-full px-4 py-2 text-xs font-semibold transition-colors",
++                tab === t.key ? "bg-duck-gold text-duck-ink" : "bg-tg-section text-tg-hint"
++              )}
++            >
++              {t.label}
++            </button>
++          ))}
++        </div>
++
++        {loading ? (
++          <div className="flex flex-col gap-3">
++            {[1, 2, 3].map((i) => (
++              <div key={i} className="skeleton h-20 rounded-2xl" />
++            ))}
++          </div>
++        ) : filtered.length === 0 ? (
++          <div className="flex flex-col items-center gap-3 py-16 text-center">
++            <DuckIcon size={56} className="opacity-40" />
++            <p className="font-display text-base font-bold text-tg-text">Замовлень немає</p>
++            <p className="text-sm text-tg-hint">Оформіть перше замовлення в каталозі.</p>
++            <Link
++              href="/catalog"
++              className="mt-2 rounded-full bg-tg-text px-6 py-2.5 text-sm font-bold text-duck-ink transition-transform active:scale-95"
++            >
++              До каталогу
++            </Link>
++          </div>
++        ) : (
++          <div className="flex flex-col gap-3">
++            {filtered.map((o) => (
++              <div
++                key={o.id}
++                className="flex items-center gap-3 rounded-2xl bg-tg-section p-3"
++              >
++                <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-xl bg-duck-charcoal">
++                  <DuckIcon size={28} className="opacity-50" />
++                </div>
++                <div className="flex-1">
++                  <div className="flex items-center gap-2">
++                    <span className="text-sm font-bold text-tg-text">
++                      Замовлення #{o.orderNumber}
++                    </span>
++                    {o.status === "NEW" && (
++                      <span className="rounded-full bg-duck-gold px-2 py-0.5 text-[10px] font-bold text-duck-ink">
++                        Нове
++                      </span>
++                    )}
++                  </div>
++                  <p className="text-xs text-tg-hint">{formatDate(o.createdAt)}</p>
++                  <p className="text-xs text-tg-hint">
++                    {o.items.length} {o.items.length === 1 ? "товар" : "товари"}
++                  </p>
++                </div>
++                <div className="text-right">
++                  <p className="font-display text-sm font-bold text-tg-text">{formatUAH(o.total)}</p>
++                  <p className="text-[11px] text-tg-hint">{statusLabels[o.status]}</p>
++                </div>
++              </div>
++            ))}
++          </div>
++        )}
++
++        {!loading && !initData && (
++          <div className="flex flex-col items-center gap-2 py-10 text-center">
++            <PackageSearch size={40} className="text-tg-hint" />
++            <p className="text-sm text-tg-hint">
++              Відкрийте застосунок через Telegram, щоб побачити свої замовлення.
++            </p>
++          </div>
++        )}
++      </div>
++    </>
++  );
++}
+diff --git a/src/app/product/[id]/page.tsx b/src/app/product/[id]/page.tsx
+index 1b16f4d..64ff753 100644
+--- a/src/app/product/[id]/page.tsx
++++ b/src/app/product/[id]/page.tsx
+@@ -267,15 +267,26 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
+           </div>
+         )}
+ 
+-        {/* Add to cart (Telegram MainButton handles "Купити") */}
+-        <button
+-          onClick={() => handleAddToCart(false)}
+-          disabled={outOfStock}
+-          className="flex items-center justify-center gap-2 rounded-2xl border-2 border-duck-gold py-3.5 text-sm font-bold text-duck-gold transition-transform active:scale-95 disabled:opacity-40"
+-        >
+-          <ShoppingBag size={16} />
+-          Додати в кошик
+-        </button>
++        {/* "Купити зараз" — primary CTA, in-page (Telegram's native MainButton
++            does the same action but only renders inside Telegram itself, so
++            this keeps the flow visible when testing in a regular browser). */}
++        <div className="flex flex-col gap-2.5">
++          <button
++            onClick={() => handleAddToCart(true)}
++            disabled={outOfStock}
++            className="rounded-2xl bg-tg-text py-3.5 text-sm font-bold text-duck-ink transition-transform active:scale-95 disabled:opacity-40"
++          >
++            Купити зараз
++          </button>
++          <button
++            onClick={() => handleAddToCart(false)}
++            disabled={outOfStock}
++            className="flex items-center justify-center gap-2 rounded-2xl border-2 border-duck-gold py-3.5 text-sm font-bold text-duck-gold transition-transform active:scale-95 disabled:opacity-40"
++          >
++            <ShoppingBag size={16} />
++            Додати в кошик
++          </button>
++        </div>
+ 
+         {/* Similar products */}
+         {similar.length > 0 && (
+diff --git a/src/app/profile/page.tsx b/src/app/profile/page.tsx
+index 388f97a..a62fa2d 100644
+--- a/src/app/profile/page.tsx
++++ b/src/app/profile/page.tsx
+@@ -1,38 +1,14 @@
+ "use client";
+ 
+-import { useEffect, useState } from "react";
++import { useState } from "react";
+ import Link from "next/link";
+ import { Package, Heart, MapPin, Settings, ChevronRight } from "lucide-react";
+ import Header from "@/components/Header";
+ import { useTelegram } from "@/context/TelegramContext";
+-import { formatUAH } from "@/lib/utils";
+-import { OrderDTO } from "@/types";
+-
+-const statusLabels: Record<string, string> = {
+-  NEW: "Нове",
+-  CONFIRMED: "Підтверджено",
+-  PROCESSING: "Комплектується",
+-  SHIPPED: "Відправлено",
+-  DELIVERED: "Доставлено",
+-  CANCELLED: "Скасовано",
+-};
+ 
+ export default function ProfilePage() {
+-  const { user, initData } = useTelegram();
+-  const [orders, setOrders] = useState<OrderDTO[]>([]);
+-  const [tab, setTab] = useState<"orders" | "addresses" | "settings">("orders");
+-  const [loading, setLoading] = useState(true);
+-
+-  useEffect(() => {
+-    if (!initData) {
+-      setLoading(false);
+-      return;
+-    }
+-    fetch(`/api/user/orders?initData=${encodeURIComponent(initData)}`)
+-      .then((r) => r.json())
+-      .then((d) => setOrders(d.orders ?? []))
+-      .finally(() => setLoading(false));
+-  }, [initData]);
++  const { user } = useTelegram();
++  const [tab, setTab] = useState<"addresses" | "settings">("addresses");
+ 
+   return (
+     <>
+@@ -50,6 +26,17 @@ export default function ProfilePage() {
+           </div>
+         </div>
+ 
++        <Link
++          href="/orders"
++          className="flex items-center justify-between rounded-2xl bg-tg-section p-4 transition-transform active:scale-[0.98]"
++        >
++          <div className="flex items-center gap-3">
++            <Package size={18} className="text-duck-gold" />
++            <span className="text-sm font-semibold text-tg-text">Мої замовлення</span>
++          </div>
++          <ChevronRight size={16} className="text-tg-hint" />
++        </Link>
++
+         <Link
+           href="/favorites"
+           className="flex items-center justify-between rounded-2xl bg-tg-section p-4 transition-transform active:scale-[0.98]"
+@@ -63,7 +50,6 @@ export default function ProfilePage() {
+ 
+         <div className="flex gap-2 rounded-2xl bg-tg-section p-1">
+           {[
+-            { key: "orders", label: "Замовлення", icon: Package },
+             { key: "addresses", label: "Адреси", icon: MapPin },
+             { key: "settings", label: "Налаштування", icon: Settings },
+           ].map((t) => (
+@@ -80,34 +66,6 @@ export default function ProfilePage() {
+           ))}
+         </div>
+ 
+-        {tab === "orders" && (
+-          <div className="flex flex-col gap-3">
+-            {loading ? (
+-              <div className="skeleton h-24 rounded-2xl" />
+-            ) : orders.length === 0 ? (
+-              <p className="py-8 text-center text-sm text-tg-hint">Замовлень поки немає</p>
+-            ) : (
+-              orders.map((o) => (
+-                <div key={o.id} className="flex flex-col gap-2 rounded-2xl bg-tg-section p-4">
+-                  <div className="flex items-center justify-between">
+-                    <span className="font-display text-sm font-bold text-tg-text">#{o.orderNumber}</span>
+-                    <span className="rounded-full bg-duck-gold/15 px-2.5 py-0.5 text-[11px] font-semibold text-duck-gold">
+-                      {statusLabels[o.status] ?? o.status}
+-                    </span>
+-                  </div>
+-                  <p className="text-xs text-tg-hint">
+-                    {new Date(o.createdAt).toLocaleDateString("uk-UA")} · {o.items.length} товар(ів)
+-                  </p>
+-                  <div className="flex justify-between text-sm font-semibold text-tg-text">
+-                    <span>Разом</span>
+-                    <span>{formatUAH(o.total)}</span>
+-                  </div>
+-                </div>
+-              ))
+-            )}
+-          </div>
+-        )}
+-
+         {tab === "addresses" && (
+           <div className="flex flex-col items-center gap-2 py-8 text-center">
+             <MapPin size={28} className="text-tg-hint" />
+diff --git a/src/components/BottomNav.tsx b/src/components/BottomNav.tsx
+index fe7c2cf..b98debd 100644
+--- a/src/components/BottomNav.tsx
++++ b/src/components/BottomNav.tsx
+@@ -2,7 +2,7 @@
+ 
+ import Link from "next/link";
+ import { usePathname } from "next/navigation";
+-import { Home, Grid3x3, ShoppingBag, Heart, User } from "lucide-react";
++import { Home, Grid3x3, ShoppingBag, Package, User } from "lucide-react";
+ import { useCart } from "@/context/CartContext";
+ import { useTelegram } from "@/context/TelegramContext";
+ import { cn } from "@/lib/utils";
+@@ -11,7 +11,7 @@ const tabs = [
+   { href: "/", label: "Головна", icon: Home },
+   { href: "/catalog", label: "Каталог", icon: Grid3x3 },
+   { href: "/cart", label: "Кошик", icon: ShoppingBag },
+-  { href: "/favorites", label: "Обране", icon: Heart },
++  { href: "/orders", label: "Замовлення", icon: Package },
+   { href: "/profile", label: "Профіль", icon: User },
+ ];
+ 
+@@ -21,7 +21,7 @@ export default function BottomNav() {
+   const { haptic } = useTelegram();
+ 
+   return (
+-    <nav className="fixed bottom-0 left-1/2 z-40 w-full max-w-md -translate-x-1/2 border-t border-white/5 bg-tg-secondary-bg/90 backdrop-blur-lg">
++    <nav className="safe-area-bottom fixed bottom-0 left-1/2 z-40 w-full max-w-md -translate-x-1/2 border-t border-white/5 bg-tg-secondary-bg/90 backdrop-blur-lg">
+       <div className="flex items-center justify-around py-2">
+         {tabs.map(({ href, label, icon: Icon }) => {
+           const active = href === "/" ? pathname === "/" : pathname?.startsWith(href);
+diff --git a/src/context/TelegramContext.tsx b/src/context/TelegramContext.tsx
+index eb9c3cd..a79db0e 100644
+--- a/src/context/TelegramContext.tsx
++++ b/src/context/TelegramContext.tsx
+@@ -96,6 +96,14 @@ function applyThemeToDocument(webApp: TelegramWebApp) {
+   root.classList.toggle("dark", webApp.colorScheme === "dark");
+ }
+ 
++/** Sync Telegram viewportHeight to --telegram-viewport-height CSS var
++    Telegram Mini Apps specify a fixed viewport height; syncing it prevents
++    blank space when the app needs to render against that exact boundary. */
++function syncViewportHeight(webApp: TelegramWebApp) {
++  const h = webApp.viewportHeight || window.innerHeight;
++  document.documentElement.style.setProperty("--telegram-viewport-height", `${h}px`);
++}
++
+ export function TelegramProvider({ children }: { children: React.ReactNode }) {
+   const [webApp, setWebApp] = useState<TelegramWebApp | null>(null);
+   const [isReady, setIsReady] = useState(false);
+@@ -111,6 +119,7 @@ export function TelegramProvider({ children }: { children: React.ReactNode }) {
+     w.ready();
+     w.expand();
+     applyThemeToDocument(w);
++    syncViewportHeight(w);
+     setColorScheme(w.colorScheme);
+     setWebApp(w);
+     setIsReady(true);
+@@ -119,8 +128,15 @@ export function TelegramProvider({ children }: { children: React.ReactNode }) {
+       applyThemeToDocument(w);
+       setColorScheme(w.colorScheme);
+     };
++    const onViewportChanged = () => {
++      syncViewportHeight(w);
++    };
+     w.onEvent("themeChanged", onThemeChanged);
+-    return () => w.offEvent("themeChanged", onThemeChanged);
++    w.onEvent("viewportChanged", onViewportChanged);
++    return () => {
++      w.offEvent("themeChanged", onThemeChanged);
++      w.offEvent("viewportChanged", onViewportChanged);
++    };
+   }, []);
+ 
+   const haptic = useCallback(
+diff --git a/src/lib/validation.ts b/src/lib/validation.ts
+index d5b6697..1f9d8bb 100644
+--- a/src/lib/validation.ts
++++ b/src/lib/validation.ts
+@@ -64,6 +64,8 @@ export const orderCreateSchema = z.object({
+   city: z.string().min(2, "Вкажіть місто").max(120),
+   novaPoshta: z.string().min(1, "Вкажіть відділення Нової Пошти").max(200),
+   comment: z.string().max(1000).optional().nullable(),
++  deliveryMethod: z.enum(["NOVA_POSHTA", "UKRPOSHTA"]).default("NOVA_POSHTA"),
++  paymentMethod: z.enum(["CASH_ON_DELIVERY", "CARD_TRANSFER"]).default("CASH_ON_DELIVERY"),
+   items: z.array(orderItemInputSchema).min(1, "Кошик порожній"),
+   promoCode: z.string().max(40).optional().nullable(),
+   initData: z.string().optional(), // Telegram WebApp initData for user identification
+diff --git a/src/types/index.ts b/src/types/index.ts
+index 4a5f7ce..68d5503 100644
+--- a/src/types/index.ts
++++ b/src/types/index.ts
+@@ -82,6 +82,8 @@ export interface OrderDTO {
+   city: string;
+   novaPoshta: string;
+   comment?: string | null;
++  deliveryMethod: "NOVA_POSHTA" | "UKRPOSHTA";
++  paymentMethod: "CASH_ON_DELIVERY" | "CARD_TRANSFER";
+   items: OrderItemDTO[];
+   subtotal: number;
+   discountTotal: number;
+-- 
+2.43.0
+

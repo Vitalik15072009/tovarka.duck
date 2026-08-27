@@ -101,6 +101,8 @@ export async function POST(req: NextRequest) {
           city: data.city,
           novaPoshta: data.novaPoshta,
           comment: data.comment,
+          deliveryMethod: data.deliveryMethod,
+          paymentMethod: data.paymentMethod,
           subtotal,
           discountTotal,
           total,

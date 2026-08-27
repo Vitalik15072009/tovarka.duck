@@ -96,6 +96,14 @@ function applyThemeToDocument(webApp: TelegramWebApp) {
   root.classList.toggle("dark", webApp.colorScheme === "dark");
 }
 
+/** Sync Telegram viewportHeight to --telegram-viewport-height CSS var
+    Telegram Mini Apps specify a fixed viewport height; syncing it prevents
+    blank space when the app needs to render against that exact boundary. */
+function syncViewportHeight(webApp: TelegramWebApp) {
+  const h = webApp.viewportHeight || window.innerHeight;
+  document.documentElement.style.setProperty("--telegram-viewport-height", `${h}px`);
+}
+
 export function TelegramProvider({ children }: { children: React.ReactNode }) {
   const [webApp, setWebApp] = useState<TelegramWebApp | null>(null);
   const [isReady, setIsReady] = useState(false);
@@ -111,6 +119,7 @@ export function TelegramProvider({ children }: { children: React.ReactNode }) {
     w.ready();
     w.expand();
     applyThemeToDocument(w);
+    syncViewportHeight(w);
     setColorScheme(w.colorScheme);
     setWebApp(w);
     setIsReady(true);
@@ -119,8 +128,15 @@ export function TelegramProvider({ children }: { children: React.ReactNode }) {
       applyThemeToDocument(w);
       setColorScheme(w.colorScheme);
     };
+    const onViewportChanged = () => {
+      syncViewportHeight(w);
+    };
     w.onEvent("themeChanged", onThemeChanged);
-    return () => w.offEvent("themeChanged", onThemeChanged);
+    w.onEvent("viewportChanged", onViewportChanged);
+    return () => {
+      w.offEvent("themeChanged", onThemeChanged);
+      w.offEvent("viewportChanged", onViewportChanged);
+    };
   }, []);
 
   const haptic = useCallback(

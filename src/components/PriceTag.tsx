@@ -11,15 +11,23 @@ export default function PriceTag({
   discountPct?: number | null;
   size?: "sm" | "md" | "lg";
 }) {
-  const priceSize = size === "lg" ? "text-2xl" : size === "md" ? "text-base" : "text-sm";
+  const priceSize =
+    size === "lg" ? "text-[26px]" : size === "md" ? "text-[16px]" : "text-[14px]";
+
   return (
     <div className="flex items-baseline gap-2">
-      <span className={`font-display font-bold text-tg-text ${priceSize}`}>{formatUAH(price)}</span>
+      <span
+        className={`font-display font-extrabold tracking-tight text-tg-text ${priceSize}`}
+      >
+        {formatUAH(price)}
+      </span>
       {oldPrice ? (
-        <span className="text-xs text-tg-hint line-through">{formatUAH(oldPrice)}</span>
+        <span className="text-[12px] text-tg-hint line-through">
+          {formatUAH(oldPrice)}
+        </span>
       ) : null}
       {discountPct ? (
-        <span className="discount-tag rounded bg-duck-coral px-1.5 py-0.5 text-[10px] font-bold text-white">
+        <span className="discount-tag rounded bg-duck-beak px-1.5 py-0.5 text-[10px] font-extrabold text-white">
           -{discountPct}%
         </span>
       ) : null}

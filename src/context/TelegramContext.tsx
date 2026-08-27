@@ -77,8 +77,20 @@ interface TelegramContextValue {
 
 const TelegramContext = createContext<TelegramContextValue | null>(null);
 
+/**
+ * TovarkaDuck використовує власну фірмову тему (чорна база + золото качки),
+ * тому кольори Telegram НЕ застосовуються до інтерфейсу — застосунок
+ * виглядає однаково у світлій і темній темі клієнта.
+ * Якщо колись знадобиться адаптація під тему Telegram — поставте true.
+ */
+const FOLLOW_TELEGRAM_THEME = false;
+
 function applyThemeToDocument(webApp: TelegramWebApp) {
   const root = document.documentElement;
+  root.classList.add("dark");
+
+  if (!FOLLOW_TELEGRAM_THEME) return;
+
   const t = webApp.themeParams || {};
   const map: Record<string, string> = {
     "--tg-bg": t.bg_color,
@@ -93,7 +105,6 @@ function applyThemeToDocument(webApp: TelegramWebApp) {
   Object.entries(map).forEach(([cssVar, value]) => {
     if (value) root.style.setProperty(cssVar, `#${value.replace("#", "")}`);
   });
-  root.classList.toggle("dark", webApp.colorScheme === "dark");
 }
 
 /** Sync Telegram viewportHeight to --telegram-viewport-height CSS var

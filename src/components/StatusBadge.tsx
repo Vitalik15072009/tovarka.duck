@@ -1,25 +1,30 @@
-import { stockStatusLabel } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 
-export default function StatusBadge({ status, size = "sm" }: { status: string; size?: "sm" | "md" }) {
-  const meta = stockStatusLabel[status] ?? stockStatusLabel.IN_STOCK;
-  const colorClass =
-    status === "IN_STOCK"
-      ? "text-duck-teal"
-      : status === "LOW_STOCK"
-      ? "text-duck-gold"
-      : "text-duck-coral";
+const meta: Record<string, { label: string; dot: string; text: string }> = {
+  IN_STOCK: { label: "В наявності", dot: "bg-duck-teal", text: "text-duck-teal" },
+  LOW_STOCK: { label: "Закінчується", dot: "bg-duck-gold", text: "text-duck-gold" },
+  OUT_OF_STOCK: { label: "Немає в наявності", dot: "bg-duck-coral", text: "text-duck-coral" },
+};
+
+export default function StatusBadge({
+  status,
+  size = "sm",
+}: {
+  status: string;
+  size?: "sm" | "md";
+}) {
+  const m = meta[status] ?? meta.IN_STOCK;
 
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1 font-medium",
-        colorClass,
-        size === "sm" ? "text-[11px]" : "text-sm"
+        "inline-flex items-center gap-1.5 font-medium",
+        m.text,
+        size === "sm" ? "text-[11px]" : "text-[13px]"
       )}
     >
-      <span>{meta.emoji}</span>
-      <span>{meta.label}</span>
+      <span className={cn("h-1.5 w-1.5 rounded-full", m.dot)} />
+      {m.label}
     </span>
   );
 }

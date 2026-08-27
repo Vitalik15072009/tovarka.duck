@@ -10,29 +10,33 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // Telegram theme-adaptive colors (fed by CSS variables set from
-        // window.Telegram.WebApp.themeParams — see TelegramContext.tsx)
+        /* Токени лишаються сумісними з усіма наявними сторінками,
+           але тепер дають глибокий чорний «дроп-стор» вигляд. */
         tg: {
-          bg: "var(--tg-bg, #0e1116)",
-          "secondary-bg": "var(--tg-secondary-bg, #161a21)",
-          text: "var(--tg-text, #f5f6f7)",
-          hint: "var(--tg-hint, #8a95a3)",
-          link: "var(--tg-link, #f5b301)",
-          button: "var(--tg-button, #f5b301)",
-          "button-text": "var(--tg-button-text, #14161a)",
-          section: "var(--tg-section-bg, #1b1f27)",
+          bg: "var(--tg-bg, #000000)",
+          "secondary-bg": "var(--tg-secondary-bg, #0d0e10)",
+          text: "var(--tg-text, #ffffff)",
+          hint: "var(--tg-hint, #8b8e95)",
+          link: "var(--tg-link, #ffc93c)",
+          button: "var(--tg-button, #ffffff)",
+          "button-text": "var(--tg-button-text, #0a0a0b)",
+          section: "var(--tg-section-bg, #16171a)",
         },
-        // TovarkaDuck brand palette — premium dark base + "duck-gold" signature
+
+        /* TovarkaDuck — фірмова палітра персонажа */
         duck: {
-          gold: "#f5b301",
-          "gold-light": "#ffd35c",
-          "gold-dark": "#c98c00",
-          ink: "#0e1116",
-          charcoal: "#161a21",
-          slate: "#1b1f27",
-          mist: "#8a95a3",
+          gold: "#ffc93c",
+          "gold-light": "#ffd766",
+          "gold-dark": "#f0980a",
+          amber: "#ffb300",
+          beak: "#f4511e",
+          ink: "#000000",
+          charcoal: "#0d0e10",
+          slate: "#16171a",
+          line: "rgba(255,255,255,0.07)",
+          mist: "#8b8e95",
           cream: "#f7f4ee",
-          teal: "#1fae8e",
+          teal: "#3ddc97",
           coral: "#ff5c5c",
         },
       },
@@ -42,16 +46,17 @@ const config: Config = {
       },
       borderRadius: {
         xl2: "1.25rem",
-        "3xl": "1.75rem",
+        "3xl": "1.5rem",
+        "4xl": "2rem",
       },
       boxShadow: {
-        gold: "0 8px 30px -8px rgba(245, 179, 1, 0.45)",
-        card: "0 4px 24px -6px rgba(0,0,0,0.35)",
-        "card-light": "0 4px 20px -8px rgba(20,20,20,0.12)",
+        gold: "0 10px 40px -12px rgba(255, 201, 60, 0.45)",
+        card: "0 8px 30px -14px rgba(0,0,0,0.9)",
+        sheet: "0 -12px 40px -20px rgba(0,0,0,0.95)",
       },
       keyframes: {
         "fade-up": {
-          "0%": { opacity: "0", transform: "translateY(12px)" },
+          "0%": { opacity: "0", transform: "translateY(14px)" },
           "100%": { opacity: "1", transform: "translateY(0)" },
         },
         "scale-in": {
@@ -62,16 +67,21 @@ const config: Config = {
           "0%": { backgroundPosition: "-400px 0" },
           "100%": { backgroundPosition: "400px 0" },
         },
-        "pulse-soft": {
-          "0%, 100%": { opacity: "1" },
-          "50%": { opacity: "0.55" },
+        "duck-bob": {
+          "0%, 100%": { transform: "translateY(0) rotate(0deg)" },
+          "50%": { transform: "translateY(-6px) rotate(-3deg)" },
+        },
+        "duck-glow": {
+          "0%, 100%": { opacity: "0.35" },
+          "50%": { opacity: "0.7" },
         },
       },
       animation: {
         "fade-up": "fade-up 0.45s cubic-bezier(0.16,1,0.3,1) both",
         "scale-in": "scale-in 0.3s cubic-bezier(0.16,1,0.3,1) both",
         shimmer: "shimmer 1.6s infinite linear",
-        "pulse-soft": "pulse-soft 2s ease-in-out infinite",
+        "duck-bob": "duck-bob 3.5s ease-in-out infinite",
+        "duck-glow": "duck-glow 4s ease-in-out infinite",
       },
     },
   },

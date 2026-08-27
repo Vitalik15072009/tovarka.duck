@@ -7,8 +7,10 @@ import { FavoritesProvider } from "@/context/FavoritesContext";
 import AppShell from "@/components/AppShell";
 
 export const metadata: Metadata = {
-  title: "TovarkaDuck — Магазин",
-  description: "Преміальний магазин TovarkaDuck прямо в Telegram",
+  title: "TovarkaDuck — оригінальний одяг та аксесуари",
+  description:
+    "TovarkaDuck (@tovarka_duck) — оригінальний одяг, взуття та аксесуари під замовлення. Магазин прямо в Telegram.",
+  applicationName: "TovarkaDuck",
 };
 
 export const viewport: Viewport = {
@@ -16,18 +18,20 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-  themeColor: "#0b0b0d",
-  viewportFit: "cover", // Safe-area support for Telegram notches/system UI
+  themeColor: "#000000",
+  viewportFit: "cover",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="uk">
+    <html lang="uk" className="dark">
       <head>
-        {/* Official Telegram Mini Apps JS SDK — required for WebApp/Main/Back button, haptics, theme */}
-        <Script src="https://telegram.org/js/telegram-web-app.js" strategy="beforeInteractive" />
+        <Script
+          src="https://telegram.org/js/telegram-web-app.js"
+          strategy="beforeInteractive"
+        />
       </head>
-      <body className="min-h-screen bg-tg-bg text-tg-text font-body antialiased">
+      <body className="min-h-screen bg-tg-bg font-body text-tg-text antialiased">
         <TelegramProvider>
           <CartProvider>
             <FavoritesProvider>

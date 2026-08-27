@@ -3,17 +3,23 @@
 @tailwind utilities;
 
 :root {
-  --tg-bg: #0e1116;
-  --tg-secondary-bg: #161a21;
-  --tg-text: #f5f6f7;
-  --tg-hint: #8a95a3;
-  --tg-link: #f5b301;
-  --tg-button: #f5b301;
-  --tg-button-text: #14161a;
-  --tg-section-bg: #1b1f27;
-  --font-display: "TDDisplay", -apple-system, "Segoe UI", sans-serif;
-  --font-body: -apple-system, "Segoe UI", Roboto, sans-serif;
-  /* Telegram viewport height — synced from WebApp.viewportHeight */
+  /* --- TovarkaDuck brand theme (чорний дроп-стор + золото качки) --- */
+  --tg-bg: #000000;
+  --tg-secondary-bg: #0d0e10;
+  --tg-section-bg: #16171a;
+  --tg-text: #ffffff;
+  --tg-hint: #8b8e95;
+  --tg-link: #ffc93c;
+  --tg-button: #ffffff;
+  --tg-button-text: #0a0a0b;
+
+  --duck-gold: #ffc93c;
+  --duck-beak: #f4511e;
+  --hairline: rgba(255, 255, 255, 0.07);
+
+  --font-display: "SF Pro Display", -apple-system, "Segoe UI", Inter, sans-serif;
+  --font-body: -apple-system, "Segoe UI", Roboto, Inter, sans-serif;
+
   --telegram-viewport-height: 100vh;
 }
 
@@ -29,9 +35,7 @@ html,
 body {
   background-color: var(--tg-bg);
   color: var(--tg-text);
-  transition: background-color 0.25s ease, color 0.25s ease;
   overscroll-behavior-y: none;
-  /* Safe-area for Telegram notches/system UI */
   padding-top: env(safe-area-inset-top);
   padding-bottom: env(safe-area-inset-bottom);
   padding-left: env(safe-area-inset-left);
@@ -40,9 +44,10 @@ body {
 
 body {
   font-family: var(--font-body);
+  letter-spacing: -0.01em;
 }
 
-/* Hide scrollbars but keep scrolling, native-app feel */
+/* Прихований скролбар — нативне відчуття застосунку */
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
@@ -51,37 +56,71 @@ body {
   scrollbar-width: none;
 }
 
-/* Premium shimmer skeleton */
+/* Скелетон завантаження */
 .skeleton {
   background: linear-gradient(
     90deg,
-    var(--tg-secondary-bg) 0%,
-    rgba(245, 179, 1, 0.12) 50%,
-    var(--tg-secondary-bg) 100%
+    #0f1012 0%,
+    rgba(255, 201, 60, 0.09) 50%,
+    #0f1012 100%
   );
   background-size: 800px 100%;
   animation: shimmer 1.6s infinite linear;
 }
 
-/* Gold underline accent used for section headers */
-.title-accent {
-  position: relative;
-  display: inline-block;
-}
-.title-accent::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  bottom: -4px;
-  height: 3px;
-  width: 32px;
-  border-radius: 999px;
-  background: linear-gradient(90deg, #f5b301, #ffd35c);
+/* Карта-поверхня: чорна, з тонкою світлою лінією замість тіні */
+.surface {
+  background-color: var(--tg-secondary-bg);
+  border: 1px solid var(--hairline);
 }
 
-/* Duck-bill shaped discount tag */
+.surface-2 {
+  background-color: var(--tg-section-bg);
+  border: 1px solid var(--hairline);
+}
+
+/* Розділювач-волосинка */
+.hairline {
+  border-color: var(--hairline);
+}
+
+/* Золотий градієнтний текст — для назви бренду */
+.brand-gradient {
+  background: linear-gradient(96deg, #ffd766 0%, #ffc93c 45%, #f0980a 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Світіння качки за героєм */
+.duck-halo::before {
+  content: "";
+  position: absolute;
+  inset: -40% -20% auto auto;
+  width: 260px;
+  height: 260px;
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(255, 201, 60, 0.22) 0%, transparent 65%);
+  filter: blur(10px);
+  pointer-events: none;
+  animation: duck-glow 4s ease-in-out infinite;
+}
+
+/* Дзьобоподібна плашка знижки */
 .discount-tag {
-  clip-path: polygon(0 0, 100% 0, 100% 70%, 85% 100%, 0 100%);
+  clip-path: polygon(0 0, 100% 0, 100% 68%, 84% 100%, 0 100%);
+}
+
+/* Пігулка-фільтр */
+.pill {
+  border: 1px solid var(--hairline);
+  background-color: var(--tg-secondary-bg);
+  color: var(--tg-hint);
+}
+.pill-active {
+  background-color: #ffffff;
+  border-color: #ffffff;
+  color: #0a0a0b;
 }
 
 button,
@@ -90,7 +129,6 @@ a {
   user-select: none;
 }
 
-/* Telegram Mini Apps: Header and Footer safe-area */
 header {
   padding-top: max(env(safe-area-inset-top), 0.5rem);
 }
@@ -100,13 +138,11 @@ nav {
   padding-bottom: max(env(safe-area-inset-bottom), 0.5rem);
 }
 
-/* Sync app height with Telegram viewport — prevent blank space at bottom */
 #__next,
 main {
-  min-height: 100dvh; /* 100vh in Telegram context */
+  min-height: 100dvh;
 }
 
-/* Telegram notch / system UI safe area on sides */
 @supports (padding: max(0px)) {
   body {
     padding-left: max(env(safe-area-inset-left), 0);
@@ -114,7 +150,6 @@ main {
   }
 }
 
-/* Utility: add safe-area-inset-bottom to fixed footers/navs */
 .safe-area-bottom {
   padding-bottom: env(safe-area-inset-bottom);
 }
@@ -124,4 +159,17 @@ textarea,
 select {
   background-color: var(--tg-secondary-bg);
   color: var(--tg-text);
+  border: 1px solid var(--hairline);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--tg-hint);
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+  border-color: rgba(255, 201, 60, 0.55);
 }

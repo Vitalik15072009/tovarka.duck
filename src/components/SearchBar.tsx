@@ -4,7 +4,13 @@ import { useRouter } from "next/navigation";
 import { Search } from "lucide-react";
 import { useState } from "react";
 
-export default function SearchBar({ initialValue = "" }: { initialValue?: string }) {
+export default function SearchBar({
+  initialValue = "",
+  placeholder = "Пошук товарів...",
+}: {
+  initialValue?: string;
+  placeholder?: string;
+}) {
   const [value, setValue] = useState(initialValue);
   const router = useRouter();
 
@@ -15,12 +21,16 @@ export default function SearchBar({ initialValue = "" }: { initialValue?: string
 
   return (
     <form onSubmit={submit} className="relative w-full">
-      <Search size={17} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-tg-hint" />
+      <Search
+        size={17}
+        strokeWidth={2}
+        className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-tg-hint"
+      />
       <input
         value={value}
         onChange={(e) => setValue(e.target.value)}
-        placeholder="Пошук товарів TovarkaDuck..."
-        className="w-full rounded-2xl border border-white/5 bg-tg-secondary-bg py-3 pl-10 pr-4 text-sm text-tg-text placeholder:text-tg-hint focus:outline-none focus:ring-2 focus:ring-duck-gold/60"
+        placeholder={placeholder}
+        className="w-full rounded-2xl border border-white/[0.07] bg-tg-secondary-bg py-3.5 pl-11 pr-4 text-[13.5px] text-tg-text placeholder:text-tg-hint"
       />
     </form>
   );

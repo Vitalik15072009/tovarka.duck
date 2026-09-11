@@ -62,6 +62,17 @@ export type OrderStatus =
   | "DELIVERED"
   | "CANCELLED";
 
+// Спосіб оплати, обраний клієнтом у checkout.
+export type PaymentMethod =
+  | "CASH_ON_DELIVERY"
+  | "CARD_TRANSFER_FULL"
+  | "CARD_TRANSFER_PREPAYMENT";
+
+// Статус ОПЛАТИ (незалежний від OrderStatus — статусу виконання замовлення).
+// PAID/FAILED виставляється ЛИШЕ адміном вручну після перевірки скріншота,
+// через захищений ендпоінт PATCH /api/orders/:id/payment.
+export type PaymentStatus = "UNPAID" | "PENDING" | "PAID" | "FAILED" | "REFUNDED";
+
 export interface OrderItemDTO {
   id: string;
   productId: string;
@@ -83,7 +94,13 @@ export interface OrderDTO {
   novaPoshta: string;
   comment?: string | null;
   deliveryMethod: "NOVA_POSHTA" | "UKRPOSHTA";
-  paymentMethod: "CASH_ON_DELIVERY" | "CARD_TRANSFER";
+  paymentMethod: PaymentMethod;
+  paymentStatus: PaymentStatus;
+  paymentScreenshotUrl?: string | null;
+  prepaidAmount?: number | null;
+  paymentConfirmedAt?: string | null;
+  paymentRejectedAt?: string | null;
+  paymentAdminNote?: string | null;
   items: OrderItemDTO[];
   subtotal: number;
   discountTotal: number;

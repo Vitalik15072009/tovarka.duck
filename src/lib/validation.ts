@@ -55,24 +55,69 @@ export const orderItemInputSchema = z.object({
   color: z.string().max(40).nullable().optional(),
 });
 
-export const orderCreateSchema = z.object({
-  fullName: z.string().min(2, "Вкажіть імʼя").max(120),
-  phone: z
-    .string()
-    .regex(/^\+?[0-9\s()-]{7,20}$/, "Некоректний номер телефону"),
-  telegramUsername: z.string().max(60).optional().nullable(),
-  city: z.string().min(2, "Вкажіть місто").max(120),
-  novaPoshta: z.string().min(1, "Вкажіть відділення Нової Пошти").max(200),
-  comment: z.string().max(1000).optional().nullable(),
-  deliveryMethod: z.enum(["NOVA_POSHTA", "UKRPOSHTA"]).default("NOVA_POSHTA"),
-  paymentMethod: z.enum(["CASH_ON_DELIVERY", "CARD_TRANSFER"]).default("CASH_ON_DELIVERY"),
-  items: z.array(orderItemInputSchema).min(1, "Кошик порожній"),
-  promoCode: z.string().max(40).optional().nullable(),
-  initData: z.string().optional(), // Telegram WebApp initData for user identification
-});
+// Способи оплати, доступні в checkout.
+//   CASH_ON_DELIVERY        — накладений платіж, оплата при отриманні.
+//   CARD_TRANSFER_FULL      — ручний переказ повної суми на картку, зі скріншотом.
+//   CARD_TRANSFER_PREPAYMENT— ручний переказ фіксованої передоплати на картку,
+//                             решта — при отриманні. Сума передоплати задається
+//                             сервером через CARD_TRANSFER_PREPAYMENT_AMOUNT,
+//                             клієнт її не передає і не може змінити.
+export const paymentMethodEnum = z.enum([
+  "CASH_ON_DELIVERY",
+  "CARD_TRANSFER_FULL",
+  "CARD_TRANSFER_PREPAYMENT",
+]);
+
+// Максимальний розмір скріншота як base64 data URL (символів рядка).
+// ~2.6 МБ base64 ≈ ~2 МБ оригінального файлу. Обмежуємо, бо зображення
+// зберігається безпосередньо в PostgreSQL (див. PAYMENT_INTEGRATION.md).
+const MAX_SCREENSHOT_BASE64_LENGTH = 2_700_000;
+
+export const orderCreateSchema = z
+  .object({
+    fullName: z.string().min(2, "Вкажіть імʼя").max(120),
+    phone: z
+      .string()
+      .regex(/^\+?[0-9\s()-]{7,20}$/, "Некоректний номер телефону"),
+    telegramUsername: z.string().max(60).optional().nullable(),
+    city: z.string().min(2, "Вкажіть місто").max(120),
+    novaPoshta: z.string().min(1, "Вкажіть відділення Нової Пошти").max(200),
+    comment: z.string().max(1000).optional().nullable(),
+    deliveryMethod: z.enum(["NOVA_POSHTA", "UKRPOSHTA"]).default("NOVA_POSHTA"),
+    paymentMethod: paymentMethodEnum.default("CASH_ON_DELIVERY"),
+    // Скріншот оплати як data URL, напр. "data:image/png;base64,....".
+    // Обовʼязковий лише для CARD_TRANSFER_FULL / CARD_TRANSFER_PREPAYMENT
+    // (перевіряється нижче через superRefine).
+    paymentScreenshotBase64: z
+      .string()
+      .max(MAX_SCREENSHOT_BASE64_LENGTH, "Скріншот занадто великий (максимум ~2 МБ)")
+      .regex(/^data:image\/(png|jpe?g|webp|heic|heif);base64,/, "Файл має бути зображенням")
+      .optional()
+      .nullable(),
+    items: z.array(orderItemInputSchema).min(1, "Кошик порожній"),
+    promoCode: z.string().max(40).optional().nullable(),
+    initData: z.string().optional(), // Telegram WebApp initData for user identification
+  })
+  .superRefine((data, ctx) => {
+    if (data.paymentMethod !== "CASH_ON_DELIVERY" && !data.paymentScreenshotBase64) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["paymentScreenshotBase64"],
+        message: "Прикріпіть скріншот оплати",
+      });
+    }
+  });
 
 export const orderStatusUpdateSchema = z.object({
   status: z.enum(["NEW", "CONFIRMED", "PROCESSING", "SHIPPED", "DELIVERED", "CANCELLED"]),
+});
+
+// Ручна перевірка оплати адміном. Це ЄДИНИЙ спосіб перевести замовлення
+// у PAID або FAILED — недоступний зі звичайного клієнтського коду,
+// захищений requireAdmin() на сервері (див. api/orders/[id]/payment/route.ts).
+export const orderPaymentReviewSchema = z.object({
+  action: z.enum(["CONFIRM", "REJECT"]),
+  note: z.string().max(500).optional().nullable(),
 });
 
 // --- Promo codes ---------------------------------------------------------------

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { validateTelegramInitData } from "@/lib/telegramAuth";
+import { serializeOrder } from "@/lib/serializeOrder";
 
 export async function GET(req: NextRequest) {
   const initData = req.nextUrl.searchParams.get("initData");
@@ -24,13 +25,5 @@ export async function GET(req: NextRequest) {
     include: { items: true },
   });
 
-  return NextResponse.json({
-    orders: orders.map((o) => ({
-      ...o,
-      subtotal: Number(o.subtotal),
-      discountTotal: Number(o.discountTotal),
-      total: Number(o.total),
-      items: o.items.map((i) => ({ ...i, price: Number(i.price) })),
-    })),
-  });
+  return NextResponse.json({ orders: orders.map(serializeOrder) });
 }

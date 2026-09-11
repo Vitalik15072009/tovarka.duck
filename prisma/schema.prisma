@@ -1,5 +1,12 @@
 // TovarkaDuck — Prisma schema
 // PostgreSQL, керується через Prisma ORM
+//
+// ЗМІНИ ДЛЯ РУЧНОЇ ОПЛАТИ ПЕРЕКАЗОМ (див. PAYMENT_INTEGRATION.md):
+//   - додано enum PaymentStatus
+//   - додано поля Order.paymentStatus / paymentScreenshotUrl / prepaidAmount /
+//     paymentConfirmedAt / paymentRejectedAt / paymentAdminNote
+// Усі нові поля або мають @default, або є nullable — це адитивна міграція,
+// вона не видаляє і не змінює жодного існуючого поля чи таблиці.
 
 generator client {
   provider = "prisma-client-js"
@@ -23,6 +30,15 @@ enum OrderStatus {
   SHIPPED      // Відправлено
   DELIVERED    // Доставлено
   CANCELLED    // Скасовано
+}
+
+// Статус ОПЛАТИ замовлення. Незалежний від OrderStatus (статус виконання).
+enum PaymentStatus {
+  UNPAID    // Оплата не потрібна зараз / накладений платіж
+  PENDING   // Клієнт прикріпив скріншот, очікує перевірки адміном
+  PAID      // Адмін вручну підтвердив оплату
+  FAILED    // Адмін відхилив скріншот / оплата не підтверджена
+  REFUNDED  // Кошти повернено клієнту
 }
 
 enum AdminRole {
@@ -152,7 +168,25 @@ model Order {
   novaPoshta    String
   comment       String?
   deliveryMethod String     @default("NOVA_POSHTA") // NOVA_POSHTA | UKRPOSHTA
-  paymentMethod  String     @default("CASH_ON_DELIVERY") // CASH_ON_DELIVERY | CARD_TRANSFER
+
+  // "CASH_ON_DELIVERY" | "CARD_TRANSFER_FULL" | "CARD_TRANSFER_PREPAYMENT"
+  // Значення описані в src/lib/validation.ts (paymentMethodEnum).
+  paymentMethod  String     @default("CASH_ON_DELIVERY")
+
+  // --- Ручна оплата переказом на картку -----------------------------------
+  // Статус оплати НЕ можна змінити на PAID через звичайний PATCH /api/orders/:id
+  // (він оновлює лише OrderStatus). Єдиний спосіб — адмінський ендпоінт
+  // PATCH /api/orders/:id/payment, захищений requireAdmin().
+  paymentStatus        PaymentStatus @default(UNPAID)
+  // Скріншот оплати. Зберігається як data URL (base64) — див. обмеження
+  // у PAYMENT_INTEGRATION.md щодо розміру бази даних.
+  paymentScreenshotUrl String?       @db.Text
+  // Сума, яку клієнт мав перерахувати зараз (повна сума або передоплата).
+  // Розраховується та зберігається СЕРВЕРОМ, ніколи не приймається від клієнта як готове число.
+  prepaidAmount        Decimal?      @db.Decimal(10, 2)
+  paymentConfirmedAt   DateTime?
+  paymentRejectedAt    DateTime?
+  paymentAdminNote     String?
 
   subtotal      Decimal     @db.Decimal(10, 2)
   discountTotal Decimal     @db.Decimal(10, 2) @default(0)
@@ -166,6 +200,7 @@ model Order {
 
   @@index([status])
   @@index([userId])
+  @@index([paymentStatus])
 }
 
 model OrderItem {

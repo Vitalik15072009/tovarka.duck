@@ -5,6 +5,17 @@ import { generateOrderNumber } from "@/lib/utils";
 import { validateTelegramInitData } from "@/lib/telegramAuth";
 import { notifyAdminOfNewOrder } from "@/lib/telegramNotify";
 import { requireAdmin } from "@/lib/adminAuth";
+import { serializeOrder } from "@/lib/serializeOrder";
+import { PaymentStatus } from "@prisma/client";
+
+// Сума фіксованої передоплати для CARD_TRANSFER_PREPAYMENT.
+// Задається на сервері через env — клієнт НІКОЛИ не передає цю суму сам,
+// щоб її не можна було підмінити з frontend.
+function getPrepaymentAmount(): number {
+  const raw = process.env.CARD_TRANSFER_PREPAYMENT_AMOUNT || process.env.NEXT_PUBLIC_CARD_TRANSFER_PREPAYMENT_AMOUNT;
+  const parsed = Number(raw);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 150;
+}
 
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null);
@@ -91,6 +102,21 @@ export async function POST(req: NextRequest) {
 
       const total = Math.max(0, subtotal - discountTotal);
 
+      // --- Оплата --------------------------------------------------------
+      // Сума, яку клієнт має переказати, і статус оплати рахуються ТІЛЬКИ
+      // на сервері, з реального total. Клієнт передає лише свій вибір
+      // способу оплати та (за потреби) скріншот.
+      let paymentStatus: PaymentStatus = PaymentStatus.UNPAID;
+      let prepaidAmount: number | null = null;
+
+      if (data.paymentMethod === "CARD_TRANSFER_FULL") {
+        prepaidAmount = total;
+        paymentStatus = PaymentStatus.PENDING;
+      } else if (data.paymentMethod === "CARD_TRANSFER_PREPAYMENT") {
+        prepaidAmount = Math.min(getPrepaymentAmount(), total);
+        paymentStatus = PaymentStatus.PENDING;
+      }
+
       const order = await tx.order.create({
         data: {
           orderNumber: generateOrderNumber(),
@@ -103,6 +129,9 @@ export async function POST(req: NextRequest) {
           comment: data.comment,
           deliveryMethod: data.deliveryMethod,
           paymentMethod: data.paymentMethod,
+          paymentStatus,
+          paymentScreenshotUrl: data.paymentScreenshotBase64 ?? null,
+          prepaidAmount,
           subtotal,
           discountTotal,
           total,
@@ -147,17 +176,7 @@ export async function POST(req: NextRequest) {
       })),
     }).catch((e) => console.error("[notifyAdminOfNewOrder]", e));
 
-    return NextResponse.json(
-      {
-        order: {
-          ...result,
-          subtotal: Number(result.subtotal),
-          discountTotal: Number(result.discountTotal),
-          total: Number(result.total),
-        },
-      },
-      { status: 201 }
-    );
+    return NextResponse.json({ order: serializeOrder(result) }, { status: 201 });
   } catch (err) {
     console.error("[POST /api/orders]", err);
     const message = err instanceof Error ? err.message : "Не вдалося оформити замовлення";
@@ -171,25 +190,21 @@ export async function GET(req: NextRequest) {
 
   const { searchParams } = new URL(req.url);
   const status = searchParams.get("status") || undefined;
+  const paymentStatus = searchParams.get("paymentStatus") || undefined;
   const limit = Math.min(Number(searchParams.get("limit")) || 50, 200);
 
   try {
     const orders = await prisma.order.findMany({
-      where: status ? { status: status as never } : {},
+      where: {
+        ...(status ? { status: status as never } : {}),
+        ...(paymentStatus ? { paymentStatus: paymentStatus as never } : {}),
+      },
       take: limit,
       orderBy: { createdAt: "desc" },
       include: { items: true },
     });
 
-    return NextResponse.json({
-      orders: orders.map((o) => ({
-        ...o,
-        subtotal: Number(o.subtotal),
-        discountTotal: Number(o.discountTotal),
-        total: Number(o.total),
-        items: o.items.map((i) => ({ ...i, price: Number(i.price) })),
-      })),
-    });
+    return NextResponse.json({ orders: orders.map(serializeOrder) });
   } catch (err) {
     console.error("[GET /api/orders]", err);
     return NextResponse.json({ error: "Не вдалося завантажити замовлення" }, { status: 500 });

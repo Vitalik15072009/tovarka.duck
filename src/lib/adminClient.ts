@@ -15,10 +15,23 @@ export function clearAdminToken(): void {
   localStorage.removeItem(TOKEN_KEY);
 }
 
-export async function adminFetch(input: string, init: RequestInit = {}): Promise<Response> {
+export async function adminFetch(
+  input: string,
+  init: RequestInit = {}
+): Promise<Response> {
   const token = getAdminToken();
   const headers = new Headers(init.headers);
-  headers.set("Content-Type", "application/json");
-  if (token) headers.set("Authorization", `Bearer ${token}`);
-  return fetch(input, { ...init, headers });
+
+  if (!(init.body instanceof FormData)) {
+    headers.set("Content-Type", "application/json");
+  }
+
+  if (token) {
+    headers.set("Authorization", `Bearer ${token}`);
+  }
+
+  return fetch(input, {
+    ...init,
+    headers,
+  });
 }

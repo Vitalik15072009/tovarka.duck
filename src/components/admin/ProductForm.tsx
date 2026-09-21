@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, X } from "lucide-react";
 import { adminFetch } from "@/lib/adminClient";
@@ -74,6 +74,8 @@ export default function ProductForm({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sizeInput, setSizeInput] = useState("");
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     fetch("/api/categories")
@@ -83,6 +85,34 @@ export default function ProductForm({
 
   function set<K extends keyof ProductFormValues>(key: K, value: ProductFormValues[K]) {
     setValues((v) => ({ ...v, [key]: value }));
+  }
+
+  async function handleImageUpload(file: File) {
+    setUploadingImage(true);
+    setError(null);
+
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const res = await adminFetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+      const data = await res.json();
+
+      if (!res.ok || typeof data.url !== "string") {
+        setError(typeof data.error === "string" ? data.error : "Не вдалося завантажити фото");
+        return;
+      }
+
+      set("images", [...values.images.filter((image) => image.url.trim()), { url: data.url }]);
+    } catch {
+      setError("Помилка мережі під час завантаження фото");
+    } finally {
+      setUploadingImage(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -134,276 +164,68 @@ export default function ProductForm({
           <input required value={values.title} onChange={(e) => set("title", e.target.value)} className="input" />
         </LabeledInput>
         <LabeledInput label="Опис">
-          <textarea
-            required
-            rows={4}
-            value={values.description}
-            onChange={(e) => set("description", e.target.value)}
-            className="input resize-none"
-          />
+          <textarea required rows={4} value={values.description} onChange={(e) => set("description", e.target.value)} className="input resize-none" />
         </LabeledInput>
         <LabeledInput label="Категорія">
-          <select
-            required
-            value={values.categoryId}
-            onChange={(e) => set("categoryId", e.target.value)}
-            className="input"
-          >
+          <select required value={values.categoryId} onChange={(e) => set("categoryId", e.target.value)} className="input">
             <option value="">Оберіть категорію</option>
-            {categories.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.icon} {c.name}
-              </option>
-            ))}
+            {categories.map((c) => <option key={c.id} value={c.id}>{c.icon} {c.name}</option>)}
           </select>
         </LabeledInput>
       </Section>
 
       <Section title="Ціна та наявність">
         <div className="grid grid-cols-2 gap-4">
-          <LabeledInput label="Ціна (грн)">
-            <input
-              required
-              type="number"
-              min="0"
-              step="0.01"
-              value={values.price}
-              onChange={(e) => set("price", e.target.value)}
-              className="input"
-            />
-          </LabeledInput>
-          <LabeledInput label="Стара ціна (необовʼязково)">
-            <input
-              type="number"
-              min="0"
-              step="0.01"
-              value={values.oldPrice}
-              onChange={(e) => set("oldPrice", e.target.value)}
-              className="input"
-            />
-          </LabeledInput>
+          <LabeledInput label="Ціна (грн)"><input required type="number" min="0" step="0.01" value={values.price} onChange={(e) => set("price", e.target.value)} className="input" /></LabeledInput>
+          <LabeledInput label="Стара ціна (необовʼязково)"><input type="number" min="0" step="0.01" value={values.oldPrice} onChange={(e) => set("oldPrice", e.target.value)} className="input" /></LabeledInput>
           <LabeledInput label="Статус наявності">
-            <select
-              value={values.stockStatus}
-              onChange={(e) => set("stockStatus", e.target.value as ProductFormValues["stockStatus"])}
-              className="input"
-            >
+            <select value={values.stockStatus} onChange={(e) => set("stockStatus", e.target.value as ProductFormValues["stockStatus"])} className="input">
               <option value="IN_STOCK">✅ В наявності</option>
               <option value="LOW_STOCK">🟡 Закінчується</option>
               <option value="OUT_OF_STOCK">🔴 Немає в наявності</option>
             </select>
           </LabeledInput>
-          <LabeledInput label="Кількість на складі">
-            <input
-              type="number"
-              min="0"
-              value={values.stockQty}
-              onChange={(e) => set("stockQty", e.target.value)}
-              className="input"
-            />
-          </LabeledInput>
+          <LabeledInput label="Кількість на складі"><input type="number" min="0" value={values.stockQty} onChange={(e) => set("stockQty", e.target.value)} className="input" /></LabeledInput>
         </div>
       </Section>
 
-      <Section title="Фото (URL)">
+      <Section title="Фото">
+        <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif,image/avif" className="hidden" onChange={(e) => { const file = e.target.files?.[0]; if (file) void handleImageUpload(file); }} />
         {values.images.map((img, i) => (
           <div key={i} className="flex gap-2">
-            <input
-              value={img.url}
-              onChange={(e) => {
-                const next = [...values.images];
-                next[i] = { url: e.target.value };
-                set("images", next);
-              }}
-              placeholder="https://..."
-              className="input flex-1"
-            />
-            <button
-              type="button"
-              onClick={() => set("images", values.images.filter((_, idx) => idx !== i))}
-              className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-tg-bg text-duck-coral"
-            >
-              <X size={14} />
-            </button>
+            <input value={img.url} onChange={(e) => { const next = [...values.images]; next[i] = { url: e.target.value }; set("images", next); }} placeholder="https://..." className="input flex-1" />
+            <button type="button" onClick={() => set("images", values.images.filter((_, idx) => idx !== i))} className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-tg-bg text-duck-coral"><X size={14} /></button>
           </div>
         ))}
-        <button
-          type="button"
-          onClick={() => set("images", [...values.images, { url: "" }])}
-          className="flex w-fit items-center gap-1.5 rounded-xl bg-tg-bg px-3 py-2 text-xs font-semibold text-duck-gold"
-        >
-          <Plus size={14} /> Додати фото
-        </button>
+        <div className="flex flex-wrap gap-2">
+          <button type="button" disabled={uploadingImage} onClick={() => fileInputRef.current?.click()} className="flex w-fit items-center gap-1.5 rounded-xl bg-duck-gold px-3 py-2 text-xs font-semibold text-duck-ink disabled:opacity-50"><Plus size={14} /> {uploadingImage ? "Завантаження..." : "Додати фото"}</button>
+          <button type="button" onClick={() => set("images", [...values.images, { url: "" }])} className="flex w-fit items-center gap-1.5 rounded-xl bg-tg-bg px-3 py-2 text-xs font-semibold text-duck-gold"><Plus size={14} /> Додати URL</button>
+        </div>
       </Section>
 
       <Section title="Розміри">
-        <div className="flex flex-wrap gap-2">
-          {values.sizes.map((s) => (
-            <span key={s} className="flex items-center gap-1 rounded-full bg-tg-bg px-3 py-1 text-xs font-semibold">
-              {s}
-              <button type="button" onClick={() => set("sizes", values.sizes.filter((x) => x !== s))}>
-                <X size={12} />
-              </button>
-            </span>
-          ))}
-        </div>
-        <div className="flex gap-2">
-          <input
-            value={sizeInput}
-            onChange={(e) => setSizeInput(e.target.value)}
-            placeholder="Наприклад: M"
-            className="input flex-1"
-          />
-          <button
-            type="button"
-            onClick={() => {
-              if (sizeInput.trim()) {
-                set("sizes", [...values.sizes, sizeInput.trim()]);
-                setSizeInput("");
-              }
-            }}
-            className="rounded-xl bg-tg-bg px-4 text-sm font-semibold text-duck-gold"
-          >
-            Додати
-          </button>
-        </div>
+        <div className="flex flex-wrap gap-2">{values.sizes.map((s) => <span key={s} className="flex items-center gap-1 rounded-full bg-tg-bg px-3 py-1 text-xs font-semibold">{s}<button type="button" onClick={() => set("sizes", values.sizes.filter((x) => x !== s))}><X size={12} /></button></span>)}</div>
+        <div className="flex gap-2"><input value={sizeInput} onChange={(e) => setSizeInput(e.target.value)} placeholder="Наприклад: M" className="input flex-1" /><button type="button" onClick={() => { if (sizeInput.trim()) { set("sizes", [...values.sizes, sizeInput.trim()]); setSizeInput(""); } }} className="rounded-xl bg-tg-bg px-4 text-sm font-semibold text-duck-gold">Додати</button></div>
       </Section>
 
       <Section title="Кольори">
-        {values.colors.map((c, i) => (
-          <div key={i} className="flex gap-2">
-            <input
-              value={c.name}
-              onChange={(e) => {
-                const next = [...values.colors];
-                next[i] = { ...next[i], name: e.target.value };
-                set("colors", next);
-              }}
-              placeholder="Назва (напр. Чорний)"
-              className="input flex-1"
-            />
-            <input
-              value={c.hex}
-              onChange={(e) => {
-                const next = [...values.colors];
-                next[i] = { ...next[i], hex: e.target.value };
-                set("colors", next);
-              }}
-              placeholder="#161a21"
-              className="input w-28"
-            />
-            <button
-              type="button"
-              onClick={() => set("colors", values.colors.filter((_, idx) => idx !== i))}
-              className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-tg-bg text-duck-coral"
-            >
-              <X size={14} />
-            </button>
-          </div>
-        ))}
-        <button
-          type="button"
-          onClick={() => set("colors", [...values.colors, { name: "", hex: "#000000" }])}
-          className="flex w-fit items-center gap-1.5 rounded-xl bg-tg-bg px-3 py-2 text-xs font-semibold text-duck-gold"
-        >
-          <Plus size={14} /> Додати колір
-        </button>
+        {values.colors.map((c, i) => <div key={i} className="flex gap-2"><input value={c.name} onChange={(e) => { const next = [...values.colors]; next[i] = { ...next[i], name: e.target.value }; set("colors", next); }} placeholder="Назва (напр. Чорний)" className="input flex-1" /><input value={c.hex} onChange={(e) => { const next = [...values.colors]; next[i] = { ...next[i], hex: e.target.value }; set("colors", next); }} placeholder="#161a21" className="input w-28" /><button type="button" onClick={() => set("colors", values.colors.filter((_, idx) => idx !== i))} className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-tg-bg text-duck-coral"><X size={14} /></button></div>)}
+        <button type="button" onClick={() => set("colors", [...values.colors, { name: "", hex: "#000000" }])} className="flex w-fit items-center gap-1.5 rounded-xl bg-tg-bg px-3 py-2 text-xs font-semibold text-duck-gold"><Plus size={14} /> Додати колір</button>
       </Section>
 
       <Section title="Характеристики">
-        {values.specs.map((s, i) => (
-          <div key={i} className="flex gap-2">
-            <input
-              value={s.key}
-              onChange={(e) => {
-                const next = [...values.specs];
-                next[i] = { ...next[i], key: e.target.value };
-                set("specs", next);
-              }}
-              placeholder="Характеристика (напр. Матеріал)"
-              className="input flex-1"
-            />
-            <input
-              value={s.value}
-              onChange={(e) => {
-                const next = [...values.specs];
-                next[i] = { ...next[i], value: e.target.value };
-                set("specs", next);
-              }}
-              placeholder="Значення"
-              className="input flex-1"
-            />
-            <button
-              type="button"
-              onClick={() => set("specs", values.specs.filter((_, idx) => idx !== i))}
-              className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-tg-bg text-duck-coral"
-            >
-              <X size={14} />
-            </button>
-          </div>
-        ))}
-        <button
-          type="button"
-          onClick={() => set("specs", [...values.specs, { key: "", value: "" }])}
-          className="flex w-fit items-center gap-1.5 rounded-xl bg-tg-bg px-3 py-2 text-xs font-semibold text-duck-gold"
-        >
-          <Plus size={14} /> Додати характеристику
-        </button>
+        {values.specs.map((s, i) => <div key={i} className="flex gap-2"><input value={s.key} onChange={(e) => { const next = [...values.specs]; next[i] = { ...next[i], key: e.target.value }; set("specs", next); }} placeholder="Характеристика (напр. Матеріал)" className="input flex-1" /><input value={s.value} onChange={(e) => { const next = [...values.specs]; next[i] = { ...next[i], value: e.target.value }; set("specs", next); }} placeholder="Значення" className="input flex-1" /><button type="button" onClick={() => set("specs", values.specs.filter((_, idx) => idx !== i))} className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-tg-bg text-duck-coral"><X size={14} /></button></div>)}
+        <button type="button" onClick={() => set("specs", [...values.specs, { key: "", value: "" }])} className="flex w-fit items-center gap-1.5 rounded-xl bg-tg-bg px-3 py-2 text-xs font-semibold text-duck-gold"><Plus size={14} /> Додати характеристику</button>
       </Section>
 
-      <Section title="Мітки">
-        <div className="flex gap-4">
-          <Checkbox label="Популярний" checked={values.isFeatured} onChange={(v) => set("isFeatured", v)} />
-          <Checkbox label="Новинка" checked={values.isNew} onChange={(v) => set("isNew", v)} />
-          <Checkbox label="Акція" checked={values.isPromo} onChange={(v) => set("isPromo", v)} />
-        </div>
-      </Section>
+      <Section title="Мітки"><div className="flex gap-4"><Checkbox label="Популярний" checked={values.isFeatured} onChange={(v) => set("isFeatured", v)} /><Checkbox label="Новинка" checked={values.isNew} onChange={(v) => set("isNew", v)} /><Checkbox label="Акція" checked={values.isPromo} onChange={(v) => set("isPromo", v)} /></div></Section>
 
-      <button
-        type="submit"
-        disabled={saving}
-        className="rounded-2xl bg-duck-gold py-3.5 text-sm font-bold text-duck-ink transition-transform active:scale-95 disabled:opacity-50"
-      >
-        {saving ? "Збереження..." : productId ? "Зберегти зміни" : "Створити товар"}
-      </button>
-
-      <style jsx global>{`
-        .input {
-          width: 100%;
-          border-radius: 0.85rem;
-          padding: 0.65rem 0.9rem;
-          font-size: 0.875rem;
-          background-color: var(--tg-bg);
-          border: 1px solid rgba(255, 255, 255, 0.06);
-        }
-      `}</style>
+      <button type="submit" disabled={saving || uploadingImage} className="rounded-2xl bg-duck-gold py-3.5 text-sm font-bold text-duck-ink transition-transform active:scale-95 disabled:opacity-50">{saving ? "Збереження..." : productId ? "Зберегти зміни" : "Створити товар"}</button>
+      <style jsx global>{`.input { width: 100%; border-radius: 0.85rem; padding: 0.65rem 0.9rem; font-size: 0.875rem; background-color: var(--tg-bg); border: 1px solid rgba(255, 255, 255, 0.06); }`}</style>
     </form>
   );
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div className="flex flex-col gap-3 rounded-3xl bg-tg-secondary-bg p-5">
-      <h2 className="font-display text-sm font-bold text-tg-hint">{title}</h2>
-      {children}
-    </div>
-  );
-}
-
-function LabeledInput({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <label className="flex flex-col gap-1.5">
-      <span className="text-xs font-medium text-tg-hint">{label}</span>
-      {children}
-    </label>
-  );
-}
-
-function Checkbox({ label, checked, onChange }: { label: string; checked: boolean; onChange: (v: boolean) => void }) {
-  return (
-    <label className="flex items-center gap-2 text-sm">
-      <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} className="h-4 w-4 accent-[#f5b301]" />
-      {label}
-    </label>
-  );
-}
+function Section({ title, children }: { title: string; children: React.ReactNode }) { return <div className="flex flex-col gap-3 rounded-3xl bg-tg-secondary-bg p-5"><h2 className="font-display text-sm font-bold text-tg-hint">{title}</h2>{children}</div>; }
+function LabeledInput({ label, children }: { label: string; children: React.ReactNode }) { return <label className="flex flex-col gap-1.5"><span className="text-xs font-medium text-tg-hint">{label}</span>{children}</label>; }
+function Checkbox({ label, checked, onChange }: { label: string; checked: boolean; onChange: (v: boolean) => void }) { return <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} className="h-4 w-4 accent-[#f5b301]" />{label}</label>; }

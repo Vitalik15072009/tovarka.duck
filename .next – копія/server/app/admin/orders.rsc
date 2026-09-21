@@ -1,0 +1,27 @@
+1:"$Sreact.fragment"
+2:I[1402,["297","static/chunks/297-acf454feea2a9bd2.js","177","static/chunks/app/layout-98b22dde44457d44.js"],""]
+3:I[7148,["297","static/chunks/297-acf454feea2a9bd2.js","177","static/chunks/app/layout-98b22dde44457d44.js"],"TelegramProvider"]
+4:I[5167,["297","static/chunks/297-acf454feea2a9bd2.js","177","static/chunks/app/layout-98b22dde44457d44.js"],"CartProvider"]
+5:I[6130,["297","static/chunks/297-acf454feea2a9bd2.js","177","static/chunks/app/layout-98b22dde44457d44.js"],"FavoritesProvider"]
+6:I[9416,["297","static/chunks/297-acf454feea2a9bd2.js","177","static/chunks/app/layout-98b22dde44457d44.js"],"default"]
+7:I[9766,[],""]
+8:I[8924,[],""]
+9:I[7989,[],"ClientSegmentRoot"]
+a:I[8326,["297","static/chunks/297-acf454feea2a9bd2.js","581","static/chunks/app/admin/layout-61dd904b23fb3809.js"],"default"]
+c:I[1959,[],"ClientPageRoot"]
+d:I[3829,["798","static/chunks/app/admin/orders/page-49fa3dbf902cfac5.js"],"default"]
+10:I[4431,[],"OutletBoundary"]
+12:I[5278,[],"AsyncMetadataOutlet"]
+14:I[4431,[],"ViewportBoundary"]
+16:I[4431,[],"MetadataBoundary"]
+17:"$Sreact.suspense"
+19:I[7150,[],""]
+:HL["/_next/static/css/8784bf14bc3a9449.css","style"]
+0:{"P":null,"b":"D9zkKI7-kJK1NAEbTbbCU","p":"","c":["","admin","orders"],"i":false,"f":[[["",{"children":["admin",{"children":["orders",{"children":["__PAGE__",{}]}]}]},"$undefined","$undefined",true],["",["$","$1","c",{"children":[[["$","link","0",{"rel":"stylesheet","href":"/_next/static/css/8784bf14bc3a9449.css","precedence":"next","crossOrigin":"$undefined","nonce":"$undefined"}]],["$","html",null,{"lang":"uk","className":"dark","children":[["$","head",null,{"children":["$","$L2",null,{"src":"https://telegram.org/js/telegram-web-app.js","strategy":"beforeInteractive"}]}],["$","body",null,{"className":"min-h-screen bg-tg-bg font-body text-tg-text antialiased","children":["$","$L3",null,{"children":["$","$L4",null,{"children":["$","$L5",null,{"children":["$","$L6",null,{"children":["$","$L7",null,{"parallelRouterKey":"children","error":"$undefined","errorStyles":"$undefined","errorScripts":"$undefined","template":["$","$L8",null,{}],"templateStyles":"$undefined","templateScripts":"$undefined","notFound":[[["$","title",null,{"children":"404: This page could not be found."}],["$","div",null,{"style":{"fontFamily":"system-ui,\"Segoe UI\",Roboto,Helvetica,Arial,sans-serif,\"Apple Color Emoji\",\"Segoe UI Emoji\"","height":"100vh","textAlign":"center","display":"flex","flexDirection":"column","alignItems":"center","justifyContent":"center"},"children":["$","div",null,{"children":[["$","style",null,{"dangerouslySetInnerHTML":{"__html":"body{color:#000;background:#fff;margin:0}.next-error-h1{border-right:1px solid rgba(0,0,0,.3)}@media (prefers-color-scheme:dark){body{color:#fff;background:#000}.next-error-h1{border-right:1px solid rgba(255,255,255,.3)}}"}}],["$","h1",null,{"className":"next-error-h1","style":{"display":"inline-block","margin":"0 20px 0 0","padding":"0 23px 0 0","fontSize":24,"fontWeight":500,"verticalAlign":"top","lineHeight":"49px"},"children":404}],["$","div",null,{"style":{"display":"inline-block"},"children":["$","h2",null,{"style":{"fontSize":14,"fontWeight":400,"lineHeight":"49px","margin":0},"children":"This page could not be found."}]}]]}]}]],[]],"forbidden":"$undefined","unauthorized":"$undefined"}]}]}]}]}]}]]}]]}],{"children":["admin",["$","$1","c",{"children":[null,["$","$L9",null,{"Component":"$a","slots":{"children":["$","$L7",null,{"parallelRouterKey":"children","error":"$undefined","errorStyles":"$undefined","errorScripts":"$undefined","template":["$","$L8",null,{}],"templateStyles":"$undefined","templateScripts":"$undefined","notFound":"$undefined","forbidden":"$undefined","unauthorized":"$undefined"}]},"params":{},"promise":"$@b"}]]}],{"children":["orders",["$","$1","c",{"children":[null,["$","$L7",null,{"parallelRouterKey":"children","error":"$undefined","errorStyles":"$undefined","errorScripts":"$undefined","template":["$","$L8",null,{}],"templateStyles":"$undefined","templateScripts":"$undefined","notFound":"$undefined","forbidden":"$undefined","unauthorized":"$undefined"}]]}],{"children":["__PAGE__",["$","$1","c",{"children":[["$","$Lc",null,{"Component":"$d","searchParams":{},"params":"$0:f:0:1:2:children:1:props:children:1:props:params","promises":["$@e","$@f"]}],null,["$","$L10",null,{"children":["$L11",["$","$L12",null,{"promise":"$@13"}]]}]]}],{},null,false]},null,false]},null,false]},null,false],["$","$1","h",{"children":[null,[["$","$L14",null,{"children":"$L15"}],null],["$","$L16",null,{"children":["$","div",null,{"hidden":true,"children":["$","$17",null,{"fallback":null,"children":"$L18"}]}]}]]}],false]],"m":"$undefined","G":["$19",[]],"s":false,"S":true}
+b:"$0:f:0:1:2:children:1:props:children:1:props:params"
+e:{}
+f:"$0:f:0:1:2:children:1:props:children:1:props:params"
+15:[["$","meta","0",{"charSet":"utf-8"}],["$","meta","1",{"name":"viewport","content":"width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, user-scalable=no"}],["$","meta","2",{"name":"theme-color","content":"#000000"}]]
+11:null
+13:{"metadata":[["$","title","0",{"children":"TovarkaDuck — оригінальний одяг та аксесуари"}],["$","meta","1",{"name":"description","content":"TovarkaDuck (@tovarka_duck) — оригінальний одяг, взуття та аксесуари під замовлення. Магазин прямо в Telegram."}],["$","meta","2",{"name":"application-name","content":"TovarkaDuck"}]],"error":null,"digest":"$undefined"}
+18:"$13:metadata"
